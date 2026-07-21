@@ -1,0 +1,1211 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Liquidity Tape — Binance Futures signal monitor</title>
+<link rel="icon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders:wght@500;700;800&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0A0E13;
+    --panel:#10161D;
+    --panel-alt:#151D26;
+    --border:#212B36;
+    --text:#E8EDF3;
+    --text-dim:#8592A3;
+    --text-faint:#4B5563;
+    --gold:#D9A55C;
+    --long:#34D399;
+    --short:#F0625F;
+    --sweep:#5EB3E8;
+    --diverg:#C792EA;
+    --font-display:'Big Shoulders', sans-serif;
+    --font-mono:'JetBrains Mono', monospace;
+    --font-body:'Inter', sans-serif;
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(ellipse 900px 500px at 50% -10%, rgba(217,165,92,0.06), transparent 60%),
+      var(--bg);
+    color:var(--text);
+    font-family:var(--font-body);
+    min-height:100vh;
+  }
+
+  a{color:var(--gold);}
+
+  /* ---------- Header ---------- */
+  .topbar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:16px;
+    padding:18px 24px;
+    border-bottom:1px solid var(--border);
+    flex-wrap:wrap;
+  }
+  .brand{display:flex;align-items:baseline;gap:12px;}
+  .brand h1{
+    font-family:var(--font-display);
+    font-weight:800;
+    font-size:28px;
+    letter-spacing:0.5px;
+    margin:0;
+    text-transform:uppercase;
+  }
+  .brand .rule{width:3px;height:20px;background:var(--gold);border-radius:1px;}
+  .brand .sub{
+    font-family:var(--font-mono);
+    font-size:11px;
+    color:var(--text-dim);
+    letter-spacing:0.5px;
+  }
+
+  .status-cluster{display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+  .status-pill{
+    display:flex;align-items:center;gap:7px;
+    font-family:var(--font-mono);
+    font-size:12px;
+    color:var(--text-dim);
+    background:var(--panel);
+    border:1px solid var(--border);
+    padding:6px 12px;
+    border-radius:20px;
+  }
+  .dot{width:7px;height:7px;border-radius:50%;background:var(--text-faint);flex:none;}
+  .dot.ok{background:var(--long);box-shadow:0 0 6px var(--long);}
+  .dot.err{background:var(--short);box-shadow:0 0 6px var(--short);}
+  .dot.loading{background:var(--gold);animation:blink 1s infinite;}
+  @keyframes blink{50%{opacity:0.3;}}
+
+  button.btn{
+    font-family:var(--font-body);
+    font-weight:600;
+    font-size:12.5px;
+    color:var(--text);
+    background:var(--panel);
+    border:1px solid var(--border);
+    padding:7px 14px;
+    border-radius:8px;
+    cursor:pointer;
+    display:flex;align-items:center;gap:6px;
+  }
+  button.btn:hover{border-color:var(--gold);color:var(--gold);}
+  select{
+    font-family:var(--font-mono);
+    font-size:12px;
+    color:var(--text);
+    background:var(--panel);
+    border:1px solid var(--border);
+    padding:6px 10px;
+    border-radius:8px;
+  }
+
+  /* ---------- Error banner ---------- */
+  .banner{
+    display:none;
+    margin:16px 24px 0;
+    padding:12px 16px;
+    border:1px solid var(--short);
+    background:rgba(240,98,95,0.08);
+    border-radius:10px;
+    font-size:13px;
+    color:var(--text);
+    line-height:1.5;
+  }
+  .banner.show{display:block;}
+  .banner b{color:var(--short);}
+
+  /* ---------- Tape (hero) ---------- */
+  .tape-wrap{
+    margin:20px 24px 0;
+    border:1px solid var(--border);
+    background:var(--panel);
+    border-radius:12px;
+    overflow:hidden;
+    position:relative;
+  }
+  .tape-label{
+    position:absolute;left:0;top:0;bottom:0;
+    display:flex;align-items:center;
+    padding:0 14px;
+    background:linear-gradient(90deg, var(--panel) 60%, transparent);
+    font-family:var(--font-mono);
+    font-size:10.5px;
+    letter-spacing:1.5px;
+    color:var(--gold);
+    z-index:2;
+    text-transform:uppercase;
+  }
+  .tape-track{
+    display:flex;
+    white-space:nowrap;
+    padding:16px 0 16px 90px;
+    animation:scroll-tape 40s linear infinite;
+  }
+  .tape-wrap:hover .tape-track{animation-play-state:paused;}
+  @media (prefers-reduced-motion: reduce){
+    .tape-track{animation:none;flex-wrap:wrap;white-space:normal;padding-left:90px;}
+  }
+  @keyframes scroll-tape{
+    0%{transform:translateX(0);}
+    100%{transform:translateX(-50%);}
+  }
+  .tape-item{
+    font-family:var(--font-mono);
+    font-size:13px;
+    padding:0 24px;
+    display:flex;
+    align-items:center;
+    gap:8px;
+    border-right:1px solid var(--border);
+    color:var(--text-dim);
+  }
+  .tape-item .t{color:var(--text-faint);}
+  .tape-item .sym{color:var(--text);font-weight:700;}
+  .tape-item.long .msg{color:var(--long);}
+  .tape-item.short .msg{color:var(--short);}
+  .tape-item.sweep .msg{color:var(--sweep);}
+  .tape-item.diverg .msg{color:var(--diverg);}
+  .tape-empty{
+    padding:18px 24px 18px 90px;
+    font-family:var(--font-mono);
+    font-size:12.5px;
+    color:var(--text-faint);
+  }
+
+  /* ---------- Trade signals ---------- */
+  .trade-signals-wrap{margin:20px 24px 0;}
+  .section-title{
+    font-family:var(--font-display);
+    font-weight:700;
+    font-size:15px;
+    letter-spacing:0.8px;
+    text-transform:uppercase;
+    color:var(--text);
+    margin-bottom:10px;
+  }
+  .section-sub{
+    font-family:var(--font-body);
+    font-weight:400;
+    text-transform:none;
+    font-size:12px;
+    letter-spacing:0;
+    color:var(--text-faint);
+  }
+  .trade-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill, minmax(260px, 1fr));
+    gap:12px;
+  }
+  .trade-empty{
+    grid-column:1/-1;
+    padding:20px;
+    border:1px dashed var(--border);
+    border-radius:10px;
+    color:var(--text-faint);
+    font-family:var(--font-mono);
+    font-size:12.5px;
+    text-align:center;
+  }
+  .trade-card{
+    border:1px solid var(--border);
+    background:var(--panel);
+    border-radius:10px;
+    padding:14px 16px;
+    border-left:3px solid var(--text-faint);
+  }
+  .trade-card.buy{border-left-color:var(--long);}
+  .trade-card.sell{border-left-color:var(--short);}
+  .tc-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+  .tc-head-left{display:flex;align-items:center;gap:8px;}
+  .tc-side{
+    font-family:var(--font-display);
+    font-weight:800;
+    font-size:14px;
+    letter-spacing:0.5px;
+    padding:2px 9px;
+    border-radius:5px;
+  }
+  .trade-card.buy .tc-side{background:rgba(52,211,153,0.15);color:var(--long);}
+  .trade-card.sell .tc-side{background:rgba(240,98,95,0.15);color:var(--short);}
+  .tc-symbol{font-family:var(--font-body);font-weight:700;font-size:13px;color:var(--text);}
+  .tc-conf{
+    font-size:10px;
+    color:var(--gold);
+    font-family:var(--font-mono);
+    background:rgba(217,165,92,0.12);
+    padding:3px 8px;
+    border-radius:20px;
+    white-space:nowrap;
+  }
+  .tc-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:8px 14px;
+    margin-bottom:10px;
+  }
+  .tc-grid label{display:block;font-size:10px;color:var(--text-faint);letter-spacing:0.4px;text-transform:uppercase;margin-bottom:2px;}
+  .tc-grid span{font-family:var(--font-mono);font-size:13px;font-variant-numeric:tabular-nums;}
+  .tc-note{font-size:11.5px;color:var(--text-dim);line-height:1.5;padding-top:8px;border-top:1px solid var(--border);}
+
+  /* ---------- Controls row ---------- */
+  .controls{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    margin:20px 24px 10px;
+    flex-wrap:wrap;
+  }
+  .controls .left{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+  input.search{
+    font-family:var(--font-mono);
+    font-size:12.5px;
+    color:var(--text);
+    background:var(--panel);
+    border:1px solid var(--border);
+    padding:7px 12px;
+    border-radius:8px;
+    width:150px;
+  }
+  input.search::placeholder{color:var(--text-faint);}
+  .legend{display:flex;gap:14px;font-size:11.5px;color:var(--text-dim);flex-wrap:wrap;}
+  .legend span{display:flex;align-items:center;gap:5px;}
+  .legend i{width:8px;height:8px;border-radius:2px;display:inline-block;}
+
+  .custom-warning{
+    display:none;
+    margin:0 24px 10px;
+    font-family:var(--font-mono);
+    font-size:11.5px;
+    color:var(--short);
+  }
+  .custom-warning.show{display:block;}
+
+  /* ---------- Custom coins panel ---------- */
+  .custom-coins-panel{
+    margin:20px 24px 0;
+    padding:14px 16px;
+    border:1px solid var(--border);
+    border-radius:12px;
+    background:var(--panel);
+  }
+  .ccp-label{
+    font-size:11px;
+    letter-spacing:0.5px;
+    text-transform:uppercase;
+    color:var(--text-dim);
+    margin-bottom:10px;
+  }
+  .ccp-row{display:flex;gap:8px;margin-bottom:10px;}
+  .chip-list{display:flex;flex-wrap:wrap;gap:8px;}
+  .chip{
+    display:inline-flex;align-items:center;gap:6px;
+    font-family:var(--font-mono);
+    font-weight:500;
+    font-size:12px;
+    background:var(--panel-alt);
+    border:1px solid var(--border);
+    padding:5px 5px 5px 12px;
+    border-radius:20px;
+    color:var(--text);
+  }
+  .chip-remove{
+    background:none;border:none;color:var(--text-faint);
+    cursor:pointer;font-size:15px;line-height:1;
+    width:18px;height:18px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    padding:0;
+  }
+  .chip-remove:hover{background:rgba(240,98,95,0.15);color:var(--short);}
+  .chip-empty{color:var(--text-faint);font-family:var(--font-mono);font-size:12px;}
+
+  /* ---------- Table ---------- */
+  .table-wrap{
+    margin:0 24px 40px;
+    border:1px solid var(--border);
+    border-radius:12px;
+    overflow:hidden;
+    background:var(--panel);
+  }
+  table{width:100%;border-collapse:collapse;font-family:var(--font-mono);font-size:13px;}
+  thead th{
+    text-align:left;
+    font-family:var(--font-body);
+    font-weight:600;
+    font-size:11px;
+    letter-spacing:0.6px;
+    text-transform:uppercase;
+    color:var(--text-dim);
+    padding:12px 16px;
+    background:var(--panel-alt);
+    border-bottom:1px solid var(--border);
+    cursor:pointer;
+    white-space:nowrap;
+  }
+  thead th:hover{color:var(--gold);}
+  tbody td{
+    padding:11px 16px;
+    border-bottom:1px solid var(--border);
+    white-space:nowrap;
+  }
+  tbody tr:last-child td{border-bottom:none;}
+  tbody tr:hover{background:var(--panel-alt);}
+  tbody tr.flash{animation:flash-row 1.6s ease-out;}
+  @keyframes flash-row{0%{background:rgba(217,165,92,0.18);}100%{background:transparent;}}
+  @media (prefers-reduced-motion: reduce){ tbody tr.flash{animation:none;} }
+
+  .sym-cell{font-family:var(--font-body);font-weight:700;color:var(--text);}
+  .sym-cell .base{font-weight:700;}
+  .sym-cell .quote{color:var(--text-faint);font-weight:500;font-size:11px;}
+  .num{text-align:right;font-variant-numeric:tabular-nums;}
+  .up{color:var(--long);}
+  .down{color:var(--short);}
+  .dim{color:var(--text-faint);}
+  .badge{
+    display:inline-flex;align-items:center;gap:5px;
+    font-family:var(--font-body);font-weight:600;font-size:11.5px;
+    padding:3px 9px;border-radius:20px;
+  }
+  .badge.sweep-high{background:rgba(240,98,95,0.12);color:var(--short);}
+  .badge.sweep-low{background:rgba(52,211,153,0.12);color:var(--long);}
+  .badge.diverg-up{background:rgba(199,146,234,0.12);color:var(--diverg);}
+  .badge.diverg-down{background:rgba(199,146,234,0.12);color:var(--diverg);}
+  .badge svg{width:11px;height:11px;}
+
+  .empty-state{
+    padding:60px 20px;
+    text-align:center;
+    color:var(--text-faint);
+    font-family:var(--font-mono);
+    font-size:13px;
+  }
+
+  /* ---------- Settings modal ---------- */
+  .modal-overlay{
+    display:none;
+    position:fixed;inset:0;
+    background:rgba(5,7,10,0.7);
+    z-index:50;
+    align-items:center;justify-content:center;
+    padding:20px;
+  }
+  .modal-overlay.show{display:flex;}
+  .modal{
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:14px;
+    width:100%;max-width:440px;
+    max-height:86vh;
+    overflow-y:auto;
+    padding:24px;
+  }
+  .modal h2{
+    font-family:var(--font-display);
+    font-size:20px;
+    text-transform:uppercase;
+    letter-spacing:0.5px;
+    margin:0 0 18px;
+  }
+  .field{margin-bottom:16px;}
+  .field label{
+    display:block;
+    font-size:11.5px;
+    color:var(--text-dim);
+    margin-bottom:6px;
+    letter-spacing:0.3px;
+  }
+  .field input{
+    width:100%;
+    font-family:var(--font-mono);
+    font-size:13px;
+    color:var(--text);
+    background:var(--panel-alt);
+    border:1px solid var(--border);
+    padding:9px 11px;
+    border-radius:8px;
+  }
+  .field .hint{font-size:11px;color:var(--text-faint);margin-top:5px;line-height:1.4;}
+  .field-row{display:flex;gap:12px;}
+  .field-row .field{flex:1;}
+  .modal-actions{display:flex;gap:10px;margin-top:20px;}
+  .modal-actions button{flex:1;}
+  .btn-primary{background:var(--gold);color:#1A1204;border-color:var(--gold);}
+  .btn-primary:hover{opacity:0.9;color:#1A1204;}
+
+  .modal-wide{max-width:640px;}
+  .history-toolbar{
+    display:flex;align-items:center;justify-content:space-between;
+    margin-bottom:12px;
+  }
+  .history-toolbar .hint{margin:0;font-size:11.5px;color:var(--text-faint);}
+  .history-table-wrap{
+    max-height:50vh;
+    overflow-y:auto;
+    border:1px solid var(--border);
+    border-radius:8px;
+  }
+  table.history-table{width:100%;border-collapse:collapse;font-family:var(--font-mono);font-size:12px;}
+  .history-table thead th{
+    position:sticky;top:0;
+    background:var(--panel-alt);
+    text-align:left;
+    padding:8px 10px;
+    font-family:var(--font-body);
+    font-size:10px;
+    letter-spacing:0.4px;
+    text-transform:uppercase;
+    color:var(--text-dim);
+    border-bottom:1px solid var(--border);
+    cursor:default;
+  }
+  .history-table tbody td{
+    padding:7px 10px;
+    border-bottom:1px solid var(--border);
+    color:var(--text);
+    vertical-align:top;
+  }
+  .history-table tbody tr:last-child td{border-bottom:none;}
+  .history-empty{padding:24px !important;text-align:center;color:var(--text-faint);}
+  .htype-long{color:var(--long);font-weight:600;}
+  .htype-short{color:var(--short);font-weight:600;}
+  .htype-diverg{color:var(--diverg);font-weight:600;}
+
+  footer{
+    padding:20px 24px 40px;
+    font-size:11.5px;
+    color:var(--text-faint);
+    line-height:1.6;
+    max-width:760px;
+  }
+</style>
+</head>
+<body>
+
+  <div class="topbar">
+    <div class="brand">
+      <h1>Liquidity Tape</h1>
+      <span class="rule"></span>
+      <span class="sub">BINANCE FUTURES · FUNDING / SWEEP / OI SIGNAL MONITOR</span>
+    </div>
+    <div class="status-cluster">
+      <div class="status-pill"><span class="dot loading" id="connDot"></span><span id="connText">ulanmoqda...</span></div>
+      <div class="status-pill" id="lastUpdated">— hali yangilanmagan</div>
+      <select id="refreshSelect">
+        <option value="60000">1 daqiqa</option>
+        <option value="300000" selected>5 daqiqa</option>
+        <option value="900000">15 daqiqa</option>
+      </select>
+      <button class="btn" id="refreshBtn">↻ Yangilash</button>
+      <button class="btn" id="historyBtn">🕓 Tarix</button>
+      <button class="btn" id="settingsBtn">⚙ Sozlamalar</button>
+    </div>
+  </div>
+
+  <div class="banner" id="errorBanner"></div>
+
+  <div class="tape-wrap">
+    <div class="tape-label">TAPE</div>
+    <div id="tapeContainer"><div class="tape-empty">Signallar kutilmoqda — birinchi tsikl tugagach shu yerda ko'rinadi.</div></div>
+  </div>
+
+  <div class="trade-signals-wrap">
+    <div class="section-title">SAVDO SIGNALLARI <span class="section-sub">— Entry / Stop Loss / Take Profit, liquidity sweep asosida</span></div>
+    <div id="tradeSignals" class="trade-grid">
+      <div class="trade-empty">Hozircha faol signal yo'q — sweep aniqlanganda shu yerda Entry/SL/TP bilan ko'rinadi.</div>
+    </div>
+  </div>
+
+  <div class="custom-coins-panel">
+    <div class="ccp-label">Qo'shimcha kuzatiladigan coinlar</div>
+    <div class="ccp-row">
+      <input type="text" id="addCoinInput" class="search" placeholder="masalan: PEPE" style="width:160px">
+      <button class="btn" id="addCoinBtn">+ Qo'shish</button>
+    </div>
+    <div id="customCoinChips" class="chip-list"></div>
+  </div>
+
+  <div class="controls">
+    <div class="left">
+      <input type="text" class="search" id="searchInput" placeholder="Coin qidirish...">
+      <div class="legend">
+        <span><i style="background:var(--short)"></i> Funding: dump xavfi</span>
+        <span><i style="background:var(--long)"></i> Funding: pump xavfi</span>
+        <span><i style="background:var(--long)"></i> BUY signal (sweep)</span>
+        <span><i style="background:var(--short)"></i> SELL signal (sweep)</span>
+        <span><i style="background:var(--diverg)"></i> OI divergensiya</span>
+      </div>
+    </div>
+  </div>
+  <div id="customWarning" class="custom-warning"></div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th data-key="symbol">Coin</th>
+          <th data-key="price" class="num">Narx</th>
+          <th data-key="change24h" class="num">24s %</th>
+          <th data-key="funding" class="num">Funding</th>
+          <th data-key="sweepRank">Signal</th>
+          <th data-key="divergRank">OI / Narx</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody">
+        <tr><td colspan="6" class="empty-state">Ma'lumot yuklanmoqda...</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="modal-overlay" id="settingsModal">
+    <div class="modal">
+      <h2>Sozlamalar</h2>
+
+      <div class="field">
+        <label>API manzili (CORS xatosi bo'lsa proxy yozing)</label>
+        <input type="text" id="apiBase" value="https://fapi.binance.com">
+        <div class="hint">Brauzer to'g'ridan-to'g'ri Binance'ga ulana olmasa (CORS), README'dagi Cloudflare Worker proxy manzilini shu yerga yozing.</div>
+      </div>
+
+      <div class="field-row">
+        <div class="field">
+          <label>Top nechta coin</label>
+          <input type="number" id="topN" min="10" max="20" value="15">
+        </div>
+        <div class="field">
+          <label>Funding chegarasi (%)</label>
+          <input type="number" id="fundingThreshold" step="0.001" value="0.05">
+        </div>
+      </div>
+
+      <div class="field-row">
+        <div class="field">
+          <label>Sweep lookback (sham soni)</label>
+          <input type="number" id="sweepLookback" min="5" max="50" value="20">
+        </div>
+        <div class="field">
+          <label>Sweep interval</label>
+          <input type="text" id="sweepInterval" value="15m">
+        </div>
+      </div>
+
+      <div class="field-row">
+        <div class="field">
+          <label>OI narx chegarasi (%)</label>
+          <input type="number" id="oiPriceThreshold" step="0.1" value="2">
+        </div>
+        <div class="field">
+          <label>OI o'zgarish chegarasi (%)</label>
+          <input type="number" id="oiThreshold" step="0.1" value="3">
+        </div>
+      </div>
+
+      <div class="field-row">
+        <div class="field">
+          <label>Risk:Reward (TP nisbati)</label>
+          <input type="number" id="riskReward" step="0.5" min="1" value="2">
+        </div>
+        <div class="field">
+          <label>SL bufer (%, wick'dan tashqarida)</label>
+          <input type="number" id="slBuffer" step="0.05" min="0" value="0.15">
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn" id="closeSettings">Bekor qilish</button>
+        <button class="btn btn-primary" id="saveSettings">Saqlash va yangilash</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="historyModal">
+    <div class="modal modal-wide">
+      <h2>Signallar tarixi</h2>
+      <div class="history-toolbar">
+        <span id="historyCount" class="hint"></span>
+        <button class="btn" id="clearHistoryBtn">Tozalash</button>
+      </div>
+      <div class="history-table-wrap">
+        <table class="history-table">
+          <thead><tr><th>Vaqt</th><th>Coin</th><th>Turi</th><th>Tafsilot</th></tr></thead>
+          <tbody id="historyBody"></tbody>
+        </table>
+      </div>
+      <div class="modal-actions">
+        <button class="btn" id="closeHistory">Yopish</button>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    Ma'lumot Binance Futures ochiq API'sidan olinadi, hech qanday hisob yoki API kalit talab qilinmaydi.
+    Sahifa faqat brauzeringizda ishlaydi — server yo'q, ma'lumot hech qayerga yuborilmaydi.
+    Bu dashboard faqat signal ko'rsatadi, savdo tavsiyasi emas; risk-menejmentni o'zingiz belgilang.
+  </footer>
+
+<script>
+(function(){
+  "use strict";
+
+  const DEFAULTS = {
+    apiBase: "https://fapi.binance.com",
+    topN: 15,
+    customCoins: [],
+    fundingThreshold: 0.05,   // percent
+    sweepLookback: 20,
+    sweepInterval: "15m",
+    oiPriceThreshold: 2,      // percent
+    oiThreshold: 3,           // percent
+    riskReward: 2,            // TP = risk * riskReward
+    slBufferPct: 0.15,        // % beyond the sweep wick
+    refreshMs: 300000
+  };
+
+  const SETTINGS_KEY = "liquidity_tape_settings_v1";
+  const HISTORY_KEY = "liquidity_tape_history_v1";
+  const HISTORY_MAX = 300;
+  let settings = loadSettings();
+  let signalHistory = loadHistory();
+  let refreshTimer = null;
+  let sortState = { key: "symbol", dir: "asc" };
+  let rows = {};          // symbol -> row data
+  let signalFeed = [];    // array of {ts, symbol, type, msg} — session tape (last 24)
+  let seenSignalKeys = new Set(); // dedupe per-cycle flashes
+
+  function loadSettings(){
+    let merged = Object.assign({}, DEFAULTS);
+    try{
+      const raw = localStorage.getItem(SETTINGS_KEY);
+      if(raw){
+        merged = Object.assign({}, DEFAULTS, JSON.parse(raw));
+      }
+    }catch(e){}
+    // migrate old comma-string format to array
+    if(typeof merged.customCoins === 'string'){
+      merged.customCoins = merged.customCoins
+        ? merged.customCoins.split(/[,\s]+/).map(s => s.trim().toUpperCase()).filter(Boolean).map(s => s.endsWith('USDT') ? s : s + 'USDT')
+        : [];
+    }
+    merged.customCoins = Array.isArray(merged.customCoins) ? merged.customCoins.slice() : [];
+    return merged;
+  }
+  function saveSettingsToStorage(){
+    try{ localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); }catch(e){}
+  }
+  function loadHistory(){
+    try{
+      const raw = localStorage.getItem(HISTORY_KEY);
+      if(raw) return JSON.parse(raw);
+    }catch(e){}
+    return [];
+  }
+  function saveHistory(){
+    try{ localStorage.setItem(HISTORY_KEY, JSON.stringify(signalHistory.slice(0, HISTORY_MAX))); }catch(e){}
+  }
+
+  // ---------- DOM refs ----------
+  const connDot = document.getElementById('connDot');
+  const connText = document.getElementById('connText');
+  const lastUpdated = document.getElementById('lastUpdated');
+  const errorBanner = document.getElementById('errorBanner');
+  const tapeContainer = document.getElementById('tapeContainer');
+  const tableBody = document.getElementById('tableBody');
+  const searchInput = document.getElementById('searchInput');
+  const refreshBtn = document.getElementById('refreshBtn');
+  const refreshSelect = document.getElementById('refreshSelect');
+  const settingsBtn = document.getElementById('settingsBtn');
+  const settingsModal = document.getElementById('settingsModal');
+  const closeSettings = document.getElementById('closeSettings');
+  const saveSettingsBtn = document.getElementById('saveSettings');
+  const historyBtn = document.getElementById('historyBtn');
+  const historyModal = document.getElementById('historyModal');
+  const closeHistory = document.getElementById('closeHistory');
+  const clearHistoryBtn = document.getElementById('clearHistoryBtn');
+  const addCoinInput = document.getElementById('addCoinInput');
+  const addCoinBtn = document.getElementById('addCoinBtn');
+  const customCoinChips = document.getElementById('customCoinChips');
+
+  refreshSelect.value = String(settings.refreshMs);
+
+  // ---------- Settings modal wiring ----------
+  function openModal(){
+    document.getElementById('apiBase').value = settings.apiBase;
+    document.getElementById('topN').value = settings.topN;
+    document.getElementById('fundingThreshold').value = settings.fundingThreshold;
+    document.getElementById('sweepLookback').value = settings.sweepLookback;
+    document.getElementById('sweepInterval').value = settings.sweepInterval;
+    document.getElementById('oiPriceThreshold').value = settings.oiPriceThreshold;
+    document.getElementById('oiThreshold').value = settings.oiThreshold;
+    document.getElementById('riskReward').value = settings.riskReward;
+    document.getElementById('slBuffer').value = settings.slBufferPct;
+    settingsModal.classList.add('show');
+  }
+  settingsBtn.addEventListener('click', openModal);
+  closeSettings.addEventListener('click', () => settingsModal.classList.remove('show'));
+  settingsModal.addEventListener('click', (e) => { if(e.target === settingsModal) settingsModal.classList.remove('show'); });
+
+  saveSettingsBtn.addEventListener('click', () => {
+    settings.apiBase = document.getElementById('apiBase').value.trim().replace(/\/+$/,'') || DEFAULTS.apiBase;
+    settings.topN = clamp(parseInt(document.getElementById('topN').value,10) || DEFAULTS.topN, 10, 20);
+    settings.fundingThreshold = parseFloat(document.getElementById('fundingThreshold').value) || DEFAULTS.fundingThreshold;
+    settings.sweepLookback = clamp(parseInt(document.getElementById('sweepLookback').value,10) || DEFAULTS.sweepLookback, 5, 50);
+    settings.sweepInterval = document.getElementById('sweepInterval').value.trim() || DEFAULTS.sweepInterval;
+    settings.oiPriceThreshold = parseFloat(document.getElementById('oiPriceThreshold').value) || DEFAULTS.oiPriceThreshold;
+    settings.oiThreshold = parseFloat(document.getElementById('oiThreshold').value) || DEFAULTS.oiThreshold;
+    settings.riskReward = Math.max(1, parseFloat(document.getElementById('riskReward').value) || DEFAULTS.riskReward);
+    const slBufferRaw = parseFloat(document.getElementById('slBuffer').value);
+    settings.slBufferPct = Math.max(0, isNaN(slBufferRaw) ? DEFAULTS.slBufferPct : slBufferRaw);
+    saveSettingsToStorage();
+    settingsModal.classList.remove('show');
+    runCycle();
+  });
+
+  refreshSelect.addEventListener('change', () => {
+    settings.refreshMs = parseInt(refreshSelect.value, 10);
+    saveSettingsToStorage();
+    scheduleRefresh();
+  });
+  refreshBtn.addEventListener('click', () => runCycle());
+  searchInput.addEventListener('input', renderTable);
+
+  historyBtn.addEventListener('click', () => { renderHistory(); historyModal.classList.add('show'); });
+  closeHistory.addEventListener('click', () => historyModal.classList.remove('show'));
+  historyModal.addEventListener('click', (e) => { if(e.target === historyModal) historyModal.classList.remove('show'); });
+  clearHistoryBtn.addEventListener('click', () => {
+    if(signalHistory.length && confirm("Butun signal tarixini o'chirishni tasdiqlaysizmi?")){
+      signalHistory = [];
+      saveHistory();
+      renderHistory();
+    }
+  });
+
+  function addCustomCoin(){
+    const sym = normalizeSymbol(addCoinInput.value);
+    if(!sym) return;
+    if(!settings.customCoins.includes(sym)){
+      settings.customCoins.push(sym);
+      saveSettingsToStorage();
+      renderCustomCoinChips();
+      runCycle();
+    }
+    addCoinInput.value = '';
+    addCoinInput.focus();
+  }
+  addCoinBtn.addEventListener('click', addCustomCoin);
+  addCoinInput.addEventListener('keydown', (e) => {
+    if(e.key === 'Enter'){ e.preventDefault(); addCustomCoin(); }
+  });
+  customCoinChips.addEventListener('click', (e) => {
+    const btn = e.target.closest('.chip-remove');
+    if(!btn) return;
+    const sym = btn.dataset.symbol;
+    settings.customCoins = settings.customCoins.filter(s => s !== sym);
+    saveSettingsToStorage();
+    renderCustomCoinChips();
+    runCycle();
+  });
+
+  function renderCustomCoinChips(){
+    if(!settings.customCoins.length){
+      customCoinChips.innerHTML = '<span class="chip-empty">Hali qo\'shilmagan — yuqoriga coin nomini yozib "+ Qo\'shish" bosing.</span>';
+      return;
+    }
+    customCoinChips.innerHTML = settings.customCoins.map(sym =>
+      '<span class="chip">' + sym.replace('USDT','') +
+      '<button class="chip-remove" data-symbol="' + sym + '" title="Olib tashlash">&times;</button></span>'
+    ).join('');
+  }
+
+  document.querySelectorAll('thead th').forEach(th => {
+    th.addEventListener('click', () => {
+      const key = th.dataset.key;
+      if(sortState.key === key){ sortState.dir = sortState.dir === 'asc' ? 'desc' : 'asc'; }
+      else { sortState.key = key; sortState.dir = 'desc'; }
+      renderTable();
+    });
+  });
+
+  function clamp(v, lo, hi){ return Math.max(lo, Math.min(hi, v)); }
+
+  // ---------- Fetch helpers ----------
+  async function apiGet(path, params){
+    const url = new URL(settings.apiBase + path);
+    if(params) Object.keys(params).forEach(k => url.searchParams.set(k, params[k]));
+    const resp = await fetch(url.toString());
+    if(!resp.ok) throw new Error("HTTP " + resp.status);
+    return resp.json();
+  }
+
+  // simple concurrency-limited pool
+  async function runPool(items, worker, concurrency){
+    const results = new Array(items.length);
+    let idx = 0;
+    async function next(){
+      while(idx < items.length){
+        const i = idx++;
+        try{ results[i] = await worker(items[i]); }
+        catch(e){ results[i] = null; }
+      }
+    }
+    const workers = Array.from({length: Math.min(concurrency, items.length)}, next);
+    await Promise.all(workers);
+    return results;
+  }
+
+  function normalizeSymbol(raw){
+    let s = (raw || '').trim().toUpperCase();
+    if(!s) return null;
+    if(!s.endsWith('USDT')) s += 'USDT';
+    return s;
+  }
+
+  async function getSymbolUniverse(n, customSymbols){
+    const data = await apiGet("/fapi/v1/ticker/24hr");
+    const usdt = data.filter(d => d.symbol.endsWith("USDT") && !d.symbol.includes("_"));
+    usdt.sort((a,b) => parseFloat(b.quoteVolume) - parseFloat(a.quoteVolume));
+
+    const byBase = {};
+    usdt.forEach(d => { byBase[d.symbol] = d; });
+
+    const topSymbols = usdt.slice(0, n).map(d => d.symbol);
+
+    const matchedCustom = [];
+    const unmatchedCustom = [];
+    (customSymbols || []).forEach(s => {
+      if(byBase[s]) matchedCustom.push(s);
+      else unmatchedCustom.push(s);
+    });
+
+    const symbols = Array.from(new Set([...matchedCustom, ...topSymbols]));
+    const priceMap = {};
+    symbols.forEach(s => {
+      const d = byBase[s];
+      priceMap[s] = { price: parseFloat(d.lastPrice), change24h: parseFloat(d.priceChangePercent) };
+    });
+
+    return { symbols, priceMap, unmatchedCustom };
+  }
+
+  async function getSymbolSignals(symbol, base){
+    const [premium, klines, oiHist] = await Promise.all([
+      apiGet("/fapi/v1/premiumIndex", {symbol}).catch(() => null),
+      apiGet("/fapi/v1/klines", {symbol, interval: settings.sweepInterval, limit: settings.sweepLookback + 1}).catch(() => null),
+      apiGet("/futures/data/openInterestHist", {symbol, period: "15m", limit: 5}).catch(() => null),
+    ]);
+
+    const out = {
+      symbol,
+      price: base ? base.price : null,
+      change24h: base ? base.change24h : null,
+      funding: null,
+      sweep: null,      // 'high' | 'low' | null
+      sweepRank: 0,
+      diverg: null,     // {dir, priceChange, oiChange} | null
+      divergRank: 0,
+      trade: null,      // {side, entry, sl, tp, target, riskPct, confluence, rr} | null
+    };
+
+    if(premium){
+      out.funding = parseFloat(premium.lastFundingRate) * 100; // percent
+      if(out.price === null) out.price = parseFloat(premium.markPrice);
+    }
+
+    if(klines && klines.length >= settings.sweepLookback + 1){
+      const prior = klines.slice(0, -1);
+      const last = klines[klines.length - 1];
+      const priorHigh = Math.max(...prior.map(c => parseFloat(c[2])));
+      const priorLow = Math.min(...prior.map(c => parseFloat(c[3])));
+      const lastHigh = parseFloat(last[2]);
+      const lastLow = parseFloat(last[3]);
+      const lastClose = parseFloat(last[4]);
+
+      if(lastHigh > priorHigh && lastClose < priorHigh){
+        out.sweep = 'high'; out.sweepRank = 2;
+      } else if(lastLow < priorLow && lastClose > priorLow){
+        out.sweep = 'low'; out.sweepRank = 2;
+      }
+
+      if(out.sweep){
+        const side = out.sweep === 'low' ? 'buy' : 'sell';
+        const bufMult = settings.slBufferPct / 100;
+        const entry = lastClose;
+        const sl = side === 'buy' ? lastLow * (1 - bufMult) : lastHigh * (1 + bufMult);
+        const target = side === 'buy' ? priorHigh : priorLow; // qarama-qarshi likvidlik
+        const risk = Math.abs(entry - sl);
+        const tp = side === 'buy' ? entry + risk * settings.riskReward : entry - risk * settings.riskReward;
+        const riskPct = entry ? (risk / entry) * 100 : 0;
+
+        let confluence = 0;
+        if(out.funding !== null){
+          if(side === 'buy' && out.funding < -settings.fundingThreshold) confluence++;
+          if(side === 'sell' && out.funding > settings.fundingThreshold) confluence++;
+        }
+
+        out.trade = { side, entry, sl, tp, target, riskPct, confluence, rr: settings.riskReward };
+      }
+
+      // reuse klines for OI-divergence price reference (~60 min back at 15m => 4 candles)
+      const backIdx = Math.max(0, klines.length - 1 - 4);
+      out._oldPrice = parseFloat(klines[backIdx][4]);
+    }
+
+    if(oiHist && oiHist.length >= 2 && out._oldPrice && out.price){
+      const oldOi = parseFloat(oiHist[0].sumOpenInterest);
+      const newOi = parseFloat(oiHist[oiHist.length - 1].sumOpenInterest);
+      const priceChange = (out.price - out._oldPrice) / out._oldPrice * 100;
+      const oiChange = oldOi ? (newOi - oldOi) / oldOi * 100 : 0;
+
+      if(Math.abs(priceChange) >= settings.oiPriceThreshold && Math.abs(oiChange) >= settings.oiThreshold){
+        let dir, note;
+        if(priceChange > 0 && oiChange < 0){ dir = 'down'; note = "Short covering — kuchsiz rally"; }
+        else if(priceChange < 0 && oiChange < 0){ dir = 'down'; note = "Long likvidatsiya — dump sekinlashmoqda"; }
+        else if(priceChange > 0 && oiChange > 0){ dir = 'up'; note = "Yangi longlar — kuchli trend"; }
+        else { dir = 'up'; note = "Yangi shortlar — kuchli tushish"; }
+        out.diverg = { dir, note, priceChange, oiChange };
+        out.divergRank = 2;
+      }
+    }
+
+    return out;
+  }
+
+  // ---------- Main cycle ----------
+  async function runCycle(){
+    setConn('loading', 'yangilanmoqda...');
+    hideBanner();
+    try{
+      const universe = await getSymbolUniverse(settings.topN, settings.customCoins);
+      const priceMap = universe.priceMap;
+      const symbols = universe.symbols;
+
+      if(universe.unmatchedCustom.length){
+        showCustomWarning("Topilmadi (Binance Futures'da bunday coin yo'q): " + universe.unmatchedCustom.join(", "));
+      } else {
+        hideCustomWarning();
+      }
+
+      const results = await runPool(symbols, (sym) => getSymbolSignals(sym, priceMap[sym]), 5);
+
+      const newRows = {};
+      const cycleSignals = [];
+      const activeTrades = [];
+      results.forEach(r => {
+        if(!r) return;
+        newRows[r.symbol] = r;
+
+        if(r.funding !== null && Math.abs(r.funding) >= settings.fundingThreshold){
+          const key = r.symbol + ':funding:' + (r.funding > 0 ? 'pos' : 'neg');
+          cycleSignals.push({
+            symbol: r.symbol, key,
+            type: r.funding > 0 ? 'short' : 'long',
+            msg: (r.funding > 0 ? "Funding +" : "Funding ") + r.funding.toFixed(4) + "% — " + (r.funding > 0 ? "dump xavfi" : "pump xavfi")
+          });
+        }
+        if(r.trade){
+          const t = r.trade;
+          const key = r.symbol + ':trade:' + t.side;
+          activeTrades.push(r);
+          cycleSignals.push({
+            symbol: r.symbol, key,
+            type: t.side === 'buy' ? 'long' : 'short',
+            msg: (t.side === 'buy' ? 'BUY' : 'SELL') + ' signal — Entry ' + formatPrice(t.entry) +
+                 ', SL ' + formatPrice(t.sl) + ', TP ' + formatPrice(t.tp)
+          });
+        }
+        if(r.diverg){
+          const key = r.symbol + ':diverg:' + r.diverg.dir;
+          cycleSignals.push({
+            symbol: r.symbol, key, type: 'diverg',
+            msg: "OI divergensiya — " + r.diverg.note
+          });
+        }
+      });
+
+      rows = newRows;
+
+      const now = new Date();
+      const newOnes = cycleSignals.filter(s => !seenSignalKeys.has(s.key));
+      newOnes.forEach(s => {
+        signalFeed.unshift(Object.assign({ts: now}, s));
+        signalHistory.unshift({ ts: now.toISOString(), symbol: s.symbol, type: s.type, msg: s.msg });
+      });
+      seenSignalKeys = new Set(cycleSignals.map(s => s.key));
+      signalFeed = signalFeed.slice(0, 24);
+      if(newOnes.length){
+        signalHistory = signalHistory.slice(0, HISTORY_MAX);
+        saveHistory();
+        if(historyModal.classList.contains('show')) renderHistory();
+      }
+
+      renderTape();
+      renderTradeSignals(activeTrades);
+      renderTable(Object.keys(newRows));
+      setConn('ok', symbols.length + " coin kuzatilmoqda");
+      lastUpdated.textContent = "yangilandi: " + now.toLocaleTimeString('uz-UZ');
+
+    }catch(err){
+      setConn('err', 'ulanish xatosi');
+      showBanner("<b>API'ga ulanib bo'lmadi.</b> Bu odatda CORS cheklovi tufayli yuz beradi (brauzer to'g'ridan-to'g'ri Binance'ga so'rov yubora olmayapti). Sozlamalar &rarr; API manzili maydoniga proxy URL kiriting (README.md ichida Cloudflare Worker misoli bor). Xato: " + escapeHtml(err.message || String(err)));
+    }
+  }
+
+  function scheduleRefresh(){
+    if(refreshTimer) clearInterval(refreshTimer);
+    refreshTimer = setInterval(runCycle, settings.refreshMs);
+  }
+
+  function setConn(state, text){
+    connDot.className = 'dot ' + state;
+    connText.textContent = text;
+  }
+  function showBanner(html){ errorBanner.innerHTML = html; errorBanner.classList.add('show'); }
+  function hideBanner(){ errorBanner.classList.remove('show'); }
+  function showCustomWarning(text){
+    const el = document.getElementById('customWarning');
+    el.textContent = text;
+    el.classList.add('show');
+  }
+  function hideCustomWarning(){
+    document.getElementById('customWarning').classList.remove('show');
+  }
+  function escapeHtml(s){ return s.replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+  // ---------- Rendering ----------
+  const sweepIcon = '<svg viewBox="0 0 16 16" fill="none"><path d="M2 12 L6 12 L8 3 L10 9 L14 9" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
+  function renderTape(){
+    if(signalFeed.length === 0){
+      tapeContainer.innerHTML = '<div class="tape-empty">Signallar kutilmoqda — birinchi tsikl tugagach shu yerda ko\'rinadi.</div>';
+      return;
+    }
+    const itemsHtml = signalFeed.map(s => tapeItemHtml(s)).join('');
+    // duplicate content for seamless marquee loop
+    tapeContainer.innerHTML = '<div class="tape-track">' + itemsHtml + itemsHtml + '</div>';
+  }
+  function tapeItemHtml(s){
+    const time = s.ts.toLocaleTimeString('uz-UZ', {hour:'2-digit', minute:'2-digit'});
+    return '<div class="tape-item ' + s.type + '">' +
+      '<span class="t">' + time + '</span>' +
+      '<span class="sym">' + s.symbol.replace('USDT','') + '</span>' +
+      '<span class="msg">' + escapeHtml(s.msg) + '</span>' +
+      '</div>';
+  }
+
+  function renderHistory(){
+    const body = document.getElementById('historyBody');
+    const countEl = document.getElementById('historyCount');
+    countEl.textContent = signalHistory.length + " ta yozuv";
+    if(signalHistory.length === 0){
+      body.innerHTML = '<tr><td colspan="4" class="history-empty">Tarix bo\'sh — signal paydo bo\'lganda shu yerga qo\'shiladi.</td></tr>';
+      return;
+    }
+    body.innerHTML = signalHistory.map(h => {
+      const d = new Date(h.ts);
+      const time = d.toLocaleString('uz-UZ', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'});
+      const cls = h.type === 'long' ? 'htype-long' : (h.type === 'short' ? 'htype-short' : (h.type === 'diverg' ? 'htype-diverg' : ''));
+      const label = h.type === 'long' ? 'BUY / PUMP' : (h.type === 'short' ? 'SELL / DUMP' : 'OI DIVERGENSIYA');
+      const base = h.symbol.replace('USDT','');
+      return '<tr><td>' + time + '</td><td>' + base + '</td><td class="' + cls + '">' + label + '</td><td>' + escapeHtml(h.msg) + '</td></tr>';
+    }).join('');
+  }
+
+  function renderTradeSignals(list){
+    const container = document.getElementById('tradeSignals');
+    if(!list || list.length === 0){
+      container.innerHTML = '<div class="trade-empty">Hozircha faol signal yo\'q — sweep aniqlanganda shu yerda Entry/SL/TP bilan ko\'rinadi.</div>';
+      return;
+    }
+    const sorted = list.slice().sort((a,b) => b.trade.confluence - a.trade.confluence);
+    container.innerHTML = sorted.map(r => tradeCardHtml(r)).join('');
+  }
+
+  function tradeCardHtml(r){
+    const t = r.trade;
+    const base = r.symbol.replace('USDT','');
+    const confluenceTag = t.confluence > 0 ? '<span class="tc-conf">✓ funding mos keladi</span>' : '';
+    return '<div class="trade-card ' + t.side + '">' +
+      '<div class="tc-head">' +
+        '<div class="tc-head-left">' +
+          '<span class="tc-side">' + (t.side === 'buy' ? 'BUY' : 'SELL') + '</span>' +
+          '<span class="tc-symbol">' + base + '/USDT</span>' +
+        '</div>' +
+        confluenceTag +
+      '</div>' +
+      '<div class="tc-grid">' +
+        '<div><label>Entry</label><span>' + formatPrice(t.entry) + '</span></div>' +
+        '<div><label>Stop Loss</label><span class="down">' + formatPrice(t.sl) + '</span></div>' +
+        '<div><label>Take Profit</label><span class="up">' + formatPrice(t.tp) + '</span></div>' +
+        '<div><label>Risk</label><span>' + t.riskPct.toFixed(2) + '%</span></div>' +
+      '</div>' +
+      '<div class="tc-note">R:R 1:' + t.rr + ' &middot; Qarama-qarshi likvidlik maqsadi: ' + formatPrice(t.target) + '</div>' +
+      '</div>';
+  }
+
+  function renderTable(){
+    const q = searchInput.value.trim().toUpperCase();
+    let list = Object.values(rows);
+    if(q) list = list.filter(r => r.symbol.includes(q));
+
+    list.sort((a,b) => {
+      let av = a[sortState.key], bv = b[sortState.key];
+      if(sortState.key === 'symbol'){ av = a.symbol; bv = b.symbol; }
+      if(av === null || av === undefined) av = -Infinity;
+      if(bv === null || bv === undefined) bv = -Infinity;
+      if(typeof av === 'string') return sortState.dir === 'asc' ? av.localeCompare(bv) : bv.localeCompare(av);
+      return sortState.dir === 'asc' ? av - bv : bv - av;
+    });
+
+    if(list.length === 0){
+      tableBody.innerHTML = '<tr><td colspan="6" class="empty-state">Natija topilmadi.</td></tr>';
+      return;
+    }
+
+    tableBody.innerHTML = list.map(r => rowHtml(r)).join('');
+  }
+
+  function rowHtml(r){
+    const base = r.symbol.replace('USDT','');
+    const changeClass = r.change24h > 0 ? 'up' : (r.change24h < 0 ? 'down' : 'dim');
+    const fundingClass = r.funding === null ? 'dim' : (Math.abs(r.funding) >= settings.fundingThreshold ? (r.funding > 0 ? 'down' : 'up') : 'dim');
+
+    let sweepCell = '<span class="dim">—</span>';
+    if(r.sweep === 'high') sweepCell = '<span class="badge sweep-high">' + sweepIcon + ' SELL</span>';
+    else if(r.sweep === 'low') sweepCell = '<span class="badge sweep-low">' + sweepIcon + ' BUY</span>';
+
+    let divergCell = '<span class="dim">—</span>';
+    if(r.diverg){
+      const cls = r.diverg.dir === 'up' ? 'diverg-up' : 'diverg-down';
+      divergCell = '<span class="badge ' + cls + '">' + r.diverg.note + '</span>';
+    }
+
+    return '<tr>' +
+      '<td class="sym-cell">' + base + ' <span class="quote">/USDT</span></td>' +
+      '<td class="num">' + (r.price !== null ? formatPrice(r.price) : '—') + '</td>' +
+      '<td class="num ' + changeClass + '">' + (r.change24h !== null ? (r.change24h > 0 ? '+' : '') + r.change24h.toFixed(2) + '%' : '—') + '</td>' +
+      '<td class="num ' + fundingClass + '">' + (r.funding !== null ? (r.funding > 0 ? '+' : '') + r.funding.toFixed(4) + '%' : '—') + '</td>' +
+      '<td>' + sweepCell + '</td>' +
+      '<td>' + divergCell + '</td>' +
+      '</tr>';
+  }
+
+  function formatPrice(p){
+    if(p >= 100) return p.toFixed(2);
+    if(p >= 1) return p.toFixed(4);
+    return p.toFixed(6);
+  }
+
+  // ---------- Boot ----------
+  runCycle();
+  scheduleRefresh();
+
+})();
+</script>
+</body>
+</html>
