@@ -31,10 +31,7 @@ No backend server or API key is required.
 
 ## 📷 Preview
 
-<img width="100%" src="preview.png">
-
 <img width="1892" height="900" alt="image" src="https://github.com/user-attachments/assets/06da3007-63eb-4991-83be-8f149106c414" />
-
 
 ---
 
