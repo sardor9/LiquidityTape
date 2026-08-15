@@ -477,6 +477,10 @@
   .htype-long{color:var(--long);font-weight:600;}
   .htype-short{color:var(--short);font-weight:600;}
   .htype-diverg{color:var(--diverg);font-weight:600;}
+  .res-tp{color:var(--long);font-weight:700;}
+  .res-sl{color:var(--short);font-weight:700;}
+  .res-open{color:var(--gold);font-weight:600;}
+  .res-na{color:var(--text-faint);}
 
   footer{
     padding:20px 24px 40px;
@@ -648,7 +652,7 @@
       </div>
       <div class="history-table-wrap">
         <table class="history-table">
-          <thead><tr><th>Vaqt</th><th>Coin</th><th>Turi</th><th>Tafsilot</th></tr></thead>
+          <thead><tr><th>Vaqt</th><th>Coin</th><th>Turi</th><th>Tafsilot</th><th>Natija</th></tr></thead>
           <tbody id="historyBody"></tbody>
         </table>
       </div>
@@ -686,14 +690,17 @@
 
   const SETTINGS_KEY = "liquidity_tape_settings_v1";
   const HISTORY_KEY = "liquidity_tape_history_v1";
+  const OPEN_TRADES_KEY = "liquidity_tape_open_trades_v1";
   const HISTORY_MAX = 300;
   let settings = loadSettings();
   let signalHistory = loadHistory();
+  let openTrades = loadOpenTrades(); // trades whose TP/SL hasn't hit yet: {id, symbol, side, entry, sl, tp, ts}
   let refreshTimer = null;
   let sortState = { key: "symbol", dir: "asc" };
   let rows = {};          // symbol -> row data
   let signalFeed = [];    // array of {ts, symbol, type, msg} — session tape (last 24)
   let seenSignalKeys = new Set(); // dedupe per-cycle flashes
+  let tradeIdCounter = 0;
 
   function loadSettings(){
     let merged = Object.assign({}, DEFAULTS);
@@ -724,6 +731,16 @@
   }
   function saveHistory(){
     try{ localStorage.setItem(HISTORY_KEY, JSON.stringify(signalHistory.slice(0, HISTORY_MAX))); }catch(e){}
+  }
+  function loadOpenTrades(){
+    try{
+      const raw = localStorage.getItem(OPEN_TRADES_KEY);
+      if(raw) return JSON.parse(raw);
+    }catch(e){}
+    return [];
+  }
+  function saveOpenTrades(){
+    try{ localStorage.setItem(OPEN_TRADES_KEY, JSON.stringify(openTrades)); }catch(e){}
   }
 
   // ---------- DOM refs ----------
@@ -815,9 +832,11 @@
   closeHistory.addEventListener('click', () => historyModal.classList.remove('show'));
   historyModal.addEventListener('click', (e) => { if(e.target === historyModal) historyModal.classList.remove('show'); });
   clearHistoryBtn.addEventListener('click', () => {
-    if(signalHistory.length && confirm("Butun signal tarixini o'chirishni tasdiqlaysizmi?")){
+    if(signalHistory.length && confirm("Butun signal tarixini o'chirishni tasdiqlaysizmi? (Faol kuzatilayotgan savdolar ham o'chadi)")){
       signalHistory = [];
+      openTrades = [];
       saveHistory();
+      saveOpenTrades();
       renderHistory();
     }
   });
@@ -1072,7 +1091,8 @@
             symbol: r.symbol, key,
             type: t.side === 'buy' ? 'long' : 'short',
             msg: (t.side === 'buy' ? 'BUY' : 'SELL') + ' signal — Entry ' + formatPrice(t.entry) +
-                 ', SL ' + formatPrice(t.sl) + ', TP ' + formatPrice(t.tp)
+                 ', SL ' + formatPrice(t.sl) + ', TP ' + formatPrice(t.tp),
+            trade: { side: t.side, entry: t.entry, sl: t.sl, tp: t.tp }
           });
         }
         if(r.diverg){
@@ -1090,7 +1110,14 @@
       const newOnes = cycleSignals.filter(s => !seenSignalKeys.has(s.key));
       newOnes.forEach(s => {
         signalFeed.unshift(Object.assign({ts: now}, s));
-        signalHistory.unshift({ ts: now.toISOString(), symbol: s.symbol, type: s.type, msg: s.msg });
+        const histEntry = { ts: now.toISOString(), symbol: s.symbol, type: s.type, msg: s.msg };
+        if(s.trade){
+          tradeIdCounter++;
+          const id = now.getTime() + '_' + tradeIdCounter;
+          Object.assign(histEntry, { id, side: s.trade.side, entry: s.trade.entry, sl: s.trade.sl, tp: s.trade.tp, outcome: null, closePrice: null, closedTs: null });
+          openTrades.push({ id, symbol: s.symbol, side: s.trade.side, entry: s.trade.entry, sl: s.trade.sl, tp: s.trade.tp, ts: now.toISOString() });
+        }
+        signalHistory.unshift(histEntry);
         if(settings.tgEnabled){
           sendTelegramMessage('<b>' + s.symbol.replace('USDT','') + '</b> — ' + s.msg);
         }
@@ -1100,8 +1127,15 @@
       if(newOnes.length){
         signalHistory = signalHistory.slice(0, HISTORY_MAX);
         saveHistory();
-        if(historyModal.classList.contains('show')) renderHistory();
+        saveOpenTrades();
       }
+
+      const tradesResolved = checkOpenTrades(newRows, now);
+      if(tradesResolved){
+        saveHistory();
+        saveOpenTrades();
+      }
+      if(historyModal.classList.contains('show') && (newOnes.length || tradesResolved)) renderHistory();
 
       renderTape();
       renderTradeSignals(activeTrades);
@@ -1157,12 +1191,49 @@
       '</div>';
   }
 
+  // Checks each still-open tracked trade against the latest fetched prices and
+  // marks it TP/SL in signalHistory once price reaches either level.
+  // Returns true if any trade was resolved this cycle.
+  function checkOpenTrades(newRows, now){
+    if(openTrades.length === 0) return false;
+    let resolved = false;
+    const stillOpen = [];
+    openTrades.forEach(ot => {
+      const r = newRows[ot.symbol];
+      const price = r && r.price != null ? r.price : null;
+      if(price === null){ stillOpen.push(ot); return; }
+      let hit = null;
+      if(ot.side === 'buy'){
+        if(price >= ot.tp) hit = 'tp';
+        else if(price <= ot.sl) hit = 'sl';
+      } else {
+        if(price <= ot.tp) hit = 'tp';
+        else if(price >= ot.sl) hit = 'sl';
+      }
+      if(hit){
+        resolved = true;
+        const h = signalHistory.find(x => x.id === ot.id);
+        if(h){ h.outcome = hit; h.closePrice = price; h.closedTs = now.toISOString(); }
+        if(settings.tgEnabled){
+          const base = ot.symbol.replace('USDT','');
+          const label = hit === 'tp' ? '✅ TAKE PROFIT' : '🛑 STOP LOSS';
+          sendTelegramMessage('<b>' + base + '</b> — ' + label + ' (' + (ot.side === 'buy' ? 'BUY' : 'SELL') + ') @ ' + formatPrice(price));
+        }
+      } else {
+        stillOpen.push(ot);
+      }
+    });
+    openTrades = stillOpen;
+    return resolved;
+  }
+
   function renderHistory(){
     const body = document.getElementById('historyBody');
     const countEl = document.getElementById('historyCount');
-    countEl.textContent = signalHistory.length + " ta yozuv";
+    const openCount = openTrades.length;
+    countEl.textContent = signalHistory.length + " ta yozuv" + (openCount ? " · " + openCount + " ta savdo faol" : "");
     if(signalHistory.length === 0){
-      body.innerHTML = '<tr><td colspan="4" class="history-empty">Tarix bo\'sh — signal paydo bo\'lganda shu yerga qo\'shiladi.</td></tr>';
+      body.innerHTML = '<tr><td colspan="5" class="history-empty">Tarix bo\'sh — signal paydo bo\'lganda shu yerga qo\'shiladi.</td></tr>';
       return;
     }
     body.innerHTML = signalHistory.map(h => {
@@ -1171,7 +1242,17 @@
       const cls = h.type === 'long' ? 'htype-long' : (h.type === 'short' ? 'htype-short' : (h.type === 'diverg' ? 'htype-diverg' : ''));
       const label = h.type === 'long' ? 'BUY / PUMP' : (h.type === 'short' ? 'SELL / DUMP' : 'OI DIVERGENSIYA');
       const base = h.symbol.replace('USDT','');
-      return '<tr><td>' + time + '</td><td>' + base + '</td><td class="' + cls + '">' + label + '</td><td>' + escapeHtml(h.msg) + '</td></tr>';
+      let resultHtml;
+      if(h.id === undefined){
+        resultHtml = '<span class="res-na">—</span>';
+      } else if(h.outcome === 'tp'){
+        resultHtml = '<span class="res-tp">✅ TP @ ' + formatPrice(h.closePrice) + '</span>';
+      } else if(h.outcome === 'sl'){
+        resultHtml = '<span class="res-sl">❌ SL @ ' + formatPrice(h.closePrice) + '</span>';
+      } else {
+        resultHtml = '<span class="res-open">⏳ Faol</span>';
+      }
+      return '<tr><td>' + time + '</td><td>' + base + '</td><td class="' + cls + '">' + label + '</td><td>' + escapeHtml(h.msg) + '</td><td>' + resultHtml + '</td></tr>';
     }).join('');
   }
 
