@@ -245,6 +245,9 @@
     border-radius:20px;
     white-space:nowrap;
   }
+  .tc-tags{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;}
+  .tc-h4{color:var(--long);background:rgba(52,211,153,0.12);}
+  .tc-h4-off{color:var(--text-faint);background:rgba(255,255,255,0.05);}
   .tc-grid{
     display:grid;
     grid-template-columns:1fr 1fr;
@@ -634,6 +637,17 @@
       </div>
 
       <div class="field">
+        <label><input type="checkbox" id="h4ConfirmEnabled" style="width:auto;margin-right:7px;vertical-align:middle;">CRT: H4 sweep bilan tasdiqlash (M15 signalga H4 ✅/tasdiqlanmagan yorlig'i qo'shiladi)</label>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>H4 lookback (sham soni)</label>
+          <input type="number" id="h4Lookback" step="1" min="2" max="50" value="20">
+        </div>
+        <div class="field"></div>
+      </div>
+
+      <div class="field">
         <label><input type="checkbox" id="tgEnabled" style="width:auto;margin-right:7px;vertical-align:middle;">Telegram'ga signal yuborish</label>
         <div class="hint">Bot tokenni bu yerga yozmang — u faqat Cloudflare Worker'da (Settings &rarr; Variables and Secrets &rarr; TELEGRAM_BOT_TOKEN) saqlanadi. Bu yoqilishi uchun "API manzili" maydonida o'zingizning Worker manzilingiz turishi kerak (proxy-worker.js).</div>
       </div>
@@ -696,6 +710,8 @@
     slBufferPct: 0.15,        // % beyond the sweep wick (floor — real buffer is max(this, ATR-based))
     atrMult: 0.5,             // SL buffer = max(slBufferPct, ATR * atrMult)
     cooldownMinutes: 30,      // min minutes before re-signaling same symbol+side after a TP/SL close
+    h4ConfirmEnabled: true,   // CRT-style: only bias-confirm entries that align with an H4 sweep
+    h4Lookback: 20,           // candles of H4 history used to find the prior H4 high/low
     tgEnabled: false,
     tgChatId: "",
     refreshMs: 300000
@@ -806,6 +822,8 @@
     document.getElementById('slBuffer').value = settings.slBufferPct;
     document.getElementById('atrMult').value = settings.atrMult;
     document.getElementById('cooldownMinutes').value = settings.cooldownMinutes;
+    document.getElementById('h4ConfirmEnabled').checked = !!settings.h4ConfirmEnabled;
+    document.getElementById('h4Lookback').value = settings.h4Lookback;
     document.getElementById('tgEnabled').checked = !!settings.tgEnabled;
     document.getElementById('tgChatId').value = settings.tgChatId || "";
     settingsModal.classList.add('show');
@@ -829,6 +847,8 @@
     settings.atrMult = Math.max(0, isNaN(atrMultRaw) ? DEFAULTS.atrMult : atrMultRaw);
     const cooldownRaw = parseInt(document.getElementById('cooldownMinutes').value, 10);
     settings.cooldownMinutes = Math.max(0, isNaN(cooldownRaw) ? DEFAULTS.cooldownMinutes : cooldownRaw);
+    settings.h4ConfirmEnabled = document.getElementById('h4ConfirmEnabled').checked;
+    settings.h4Lookback = clamp(parseInt(document.getElementById('h4Lookback').value,10) || DEFAULTS.h4Lookback, 2, 50);
     settings.tgEnabled = document.getElementById('tgEnabled').checked;
     settings.tgChatId = document.getElementById('tgChatId').value.trim();
     saveSettingsToStorage();
@@ -1000,10 +1020,13 @@
   }
 
   async function getSymbolSignals(symbol, base){
-    const [premium, klines, oiHist] = await Promise.all([
+    const [premium, klines, oiHist, h4Klines] = await Promise.all([
       apiGet("/fapi/v1/premiumIndex", {symbol}).catch(() => null),
       apiGet("/fapi/v1/klines", {symbol, interval: settings.sweepInterval, limit: settings.sweepLookback + 1}).catch(() => null),
       apiGet("/futures/data/openInterestHist", {symbol, period: "15m", limit: 5}).catch(() => null),
+      settings.h4ConfirmEnabled
+        ? apiGet("/fapi/v1/klines", {symbol, interval: "4h", limit: settings.h4Lookback + 1}).catch(() => null)
+        : Promise.resolve(null),
     ]);
 
     const out = {
@@ -1016,11 +1039,30 @@
       diverg: null,     // {dir, priceChange, oiChange} | null
       divergRank: 0,
       trade: null,      // {side, entry, sl, tp, target, riskPct, confluence, rr} | null
+      h4Bias: null,      // 'buy' | 'sell' | null — CRT-style H4 sweep direction, if H4 confirm is on
     };
 
     if(premium){
       out.funding = parseFloat(premium.lastFundingRate) * 100; // percent
       if(out.price === null) out.price = parseFloat(premium.markPrice);
+    }
+
+    // CRT-style higher-timeframe bias: has the prior H4 range's high or low been
+    // swept recently? Doesn't gate the M15 signal — it's a confluence flag so both
+    // "confirmed" and "unconfirmed" signals still show, marked accordingly.
+    if(settings.h4ConfirmEnabled && h4Klines && h4Klines.length >= settings.h4Lookback + 1){
+      const h4Prior = h4Klines.slice(0, -1);
+      const h4Last = h4Klines[h4Klines.length - 1];
+      const h4PriorHigh = Math.max(...h4Prior.map(c => parseFloat(c[2])));
+      const h4PriorLow = Math.min(...h4Prior.map(c => parseFloat(c[3])));
+      const h4LastHigh = parseFloat(h4Last[2]);
+      const h4LastLow = parseFloat(h4Last[3]);
+      const h4LastClose = parseFloat(h4Last[4]);
+      if(h4LastHigh > h4PriorHigh && h4LastClose < h4PriorHigh){
+        out.h4Bias = 'sell'; // H4 high swept -> bearish bias, look for M15 SELL
+      } else if(h4LastLow < h4PriorLow && h4LastClose > h4PriorLow){
+        out.h4Bias = 'buy';  // H4 low swept -> bullish bias, look for M15 BUY
+      }
     }
 
     if(klines && klines.length >= settings.sweepLookback + 1){
@@ -1068,8 +1110,10 @@
           if(side === 'buy' && out.funding < -settings.fundingThreshold) confluence++;
           if(side === 'sell' && out.funding > settings.fundingThreshold) confluence++;
         }
+        const h4Confirmed = settings.h4ConfirmEnabled ? (out.h4Bias === side) : null; // null = confirmation off
+        if(h4Confirmed) confluence++;
 
-        out.trade = { side, entry, sl, tp, target, riskPct, confluence, rr: settings.riskReward, cooldown: !!inCooldown };
+        out.trade = { side, entry, sl, tp, target, riskPct, confluence, rr: settings.riskReward, cooldown: !!inCooldown, h4Confirmed };
       }
 
       // reuse klines for OI-divergence price reference (~60 min back at 15m => 4 candles)
@@ -1139,12 +1183,13 @@
           // duplicate/overlapping positions and rapid-fire re-signaling (whipsaw).
           const alreadyOpen = openTrades.some(ot => ot.symbol === r.symbol && ot.side === t.side);
           if(!t.cooldown && !alreadyOpen){
+            const h4Tag = t.h4Confirmed === true ? ' · H4 ✅ tasdiqlangan' : (t.h4Confirmed === false ? ' · H4 tasdiqlanmagan' : '');
             cycleSignals.push({
               symbol: r.symbol, key,
               type: t.side === 'buy' ? 'long' : 'short',
               msg: (t.side === 'buy' ? 'BUY' : 'SELL') + ' signal — Entry ' + formatPrice(t.entry) +
-                   ', SL ' + formatPrice(t.sl) + ', TP ' + formatPrice(t.tp),
-              trade: { side: t.side, entry: t.entry, sl: t.sl, tp: t.tp }
+                   ', SL ' + formatPrice(t.sl) + ', TP ' + formatPrice(t.tp) + h4Tag,
+              trade: { side: t.side, entry: t.entry, sl: t.sl, tp: t.tp, h4Confirmed: t.h4Confirmed }
             });
           }
         }
@@ -1167,7 +1212,7 @@
         if(s.trade){
           tradeIdCounter++;
           const id = now.getTime() + '_' + tradeIdCounter;
-          Object.assign(histEntry, { id, side: s.trade.side, entry: s.trade.entry, sl: s.trade.sl, tp: s.trade.tp, outcome: null, closePrice: null, closedTs: null });
+          Object.assign(histEntry, { id, side: s.trade.side, entry: s.trade.entry, sl: s.trade.sl, tp: s.trade.tp, h4Confirmed: s.trade.h4Confirmed, outcome: null, closePrice: null, closedTs: null });
           openTrades.push({ id, symbol: s.symbol, side: s.trade.side, entry: s.trade.entry, sl: s.trade.sl, tp: s.trade.tp, ts: now.toISOString() });
         }
         signalHistory.unshift(histEntry);
@@ -1324,14 +1369,19 @@
   function tradeCardHtml(r){
     const t = r.trade;
     const base = r.symbol.replace('USDT','');
-    const confluenceTag = t.confluence > 0 ? '<span class="tc-conf">✓ funding mos keladi</span>' : '';
+    const fundingMatch = (t.side === 'buy' && r.funding !== null && r.funding < -settings.fundingThreshold) ||
+                          (t.side === 'sell' && r.funding !== null && r.funding > settings.fundingThreshold);
+    const tags = [];
+    if(fundingMatch) tags.push('<span class="tc-conf">✓ funding mos keladi</span>');
+    if(t.h4Confirmed === true) tags.push('<span class="tc-conf tc-h4">✓ H4 tasdiqlangan</span>');
+    else if(t.h4Confirmed === false) tags.push('<span class="tc-conf tc-h4-off">H4 tasdiqlanmagan</span>');
     return '<div class="trade-card ' + t.side + '">' +
       '<div class="tc-head">' +
         '<div class="tc-head-left">' +
           '<span class="tc-side">' + (t.side === 'buy' ? 'BUY' : 'SELL') + '</span>' +
           '<span class="tc-symbol">' + base + '/USDT</span>' +
         '</div>' +
-        confluenceTag +
+        '<div class="tc-tags">' + tags.join('') + '</div>' +
       '</div>' +
       '<div class="tc-grid">' +
         '<div><label>Entry</label><span>' + formatPrice(t.entry) + '</span></div>' +
