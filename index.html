@@ -622,6 +622,17 @@
         </div>
       </div>
 
+      <div class="field-row">
+        <div class="field">
+          <label>ATR ko'paytiruvchi (SL, volatillikka moslashadi)</label>
+          <input type="number" id="atrMult" step="0.1" min="0" value="0.5">
+        </div>
+        <div class="field">
+          <label>Cooldown (daqiqa, TP/SL'dan keyin)</label>
+          <input type="number" id="cooldownMinutes" step="5" min="0" value="30">
+        </div>
+      </div>
+
       <div class="field">
         <label><input type="checkbox" id="tgEnabled" style="width:auto;margin-right:7px;vertical-align:middle;">Telegram'ga signal yuborish</label>
         <div class="hint">Bot tokenni bu yerga yozmang — u faqat Cloudflare Worker'da (Settings &rarr; Variables and Secrets &rarr; TELEGRAM_BOT_TOKEN) saqlanadi. Bu yoqilishi uchun "API manzili" maydonida o'zingizning Worker manzilingiz turishi kerak (proxy-worker.js).</div>
@@ -682,7 +693,9 @@
     oiPriceThreshold: 2,      // percent
     oiThreshold: 3,           // percent
     riskReward: 2,            // TP = risk * riskReward
-    slBufferPct: 0.15,        // % beyond the sweep wick
+    slBufferPct: 0.15,        // % beyond the sweep wick (floor — real buffer is max(this, ATR-based))
+    atrMult: 0.5,             // SL buffer = max(slBufferPct, ATR * atrMult)
+    cooldownMinutes: 30,      // min minutes before re-signaling same symbol+side after a TP/SL close
     tgEnabled: false,
     tgChatId: "",
     refreshMs: 300000
@@ -691,10 +704,12 @@
   const SETTINGS_KEY = "liquidity_tape_settings_v1";
   const HISTORY_KEY = "liquidity_tape_history_v1";
   const OPEN_TRADES_KEY = "liquidity_tape_open_trades_v1";
+  const COOLDOWN_KEY = "liquidity_tape_cooldowns_v1";
   const HISTORY_MAX = 300;
   let settings = loadSettings();
   let signalHistory = loadHistory();
   let openTrades = loadOpenTrades(); // trades whose TP/SL hasn't hit yet: {id, symbol, side, entry, sl, tp, ts}
+  let lastClosedAt = loadCooldowns(); // "SYMBOL_side" -> ms timestamp of last TP/SL close
   let refreshTimer = null;
   let sortState = { key: "symbol", dir: "asc" };
   let rows = {};          // symbol -> row data
@@ -742,6 +757,16 @@
   function saveOpenTrades(){
     try{ localStorage.setItem(OPEN_TRADES_KEY, JSON.stringify(openTrades)); }catch(e){}
   }
+  function loadCooldowns(){
+    try{
+      const raw = localStorage.getItem(COOLDOWN_KEY);
+      if(raw) return JSON.parse(raw);
+    }catch(e){}
+    return {};
+  }
+  function saveCooldowns(){
+    try{ localStorage.setItem(COOLDOWN_KEY, JSON.stringify(lastClosedAt)); }catch(e){}
+  }
 
   // ---------- DOM refs ----------
   const connDot = document.getElementById('connDot');
@@ -779,6 +804,8 @@
     document.getElementById('oiThreshold').value = settings.oiThreshold;
     document.getElementById('riskReward').value = settings.riskReward;
     document.getElementById('slBuffer').value = settings.slBufferPct;
+    document.getElementById('atrMult').value = settings.atrMult;
+    document.getElementById('cooldownMinutes').value = settings.cooldownMinutes;
     document.getElementById('tgEnabled').checked = !!settings.tgEnabled;
     document.getElementById('tgChatId').value = settings.tgChatId || "";
     settingsModal.classList.add('show');
@@ -798,6 +825,10 @@
     settings.riskReward = Math.max(1, parseFloat(document.getElementById('riskReward').value) || DEFAULTS.riskReward);
     const slBufferRaw = parseFloat(document.getElementById('slBuffer').value);
     settings.slBufferPct = Math.max(0, isNaN(slBufferRaw) ? DEFAULTS.slBufferPct : slBufferRaw);
+    const atrMultRaw = parseFloat(document.getElementById('atrMult').value);
+    settings.atrMult = Math.max(0, isNaN(atrMultRaw) ? DEFAULTS.atrMult : atrMultRaw);
+    const cooldownRaw = parseInt(document.getElementById('cooldownMinutes').value, 10);
+    settings.cooldownMinutes = Math.max(0, isNaN(cooldownRaw) ? DEFAULTS.cooldownMinutes : cooldownRaw);
     settings.tgEnabled = document.getElementById('tgEnabled').checked;
     settings.tgChatId = document.getElementById('tgChatId').value.trim();
     saveSettingsToStorage();
@@ -1011,11 +1042,26 @@
         const side = out.sweep === 'low' ? 'buy' : 'sell';
         const bufMult = settings.slBufferPct / 100;
         const entry = lastClose;
-        const sl = side === 'buy' ? lastLow * (1 - bufMult) : lastHigh * (1 + bufMult);
+        // ATR (average true range) over the prior candles — buffer scales with each
+        // coin's own volatility instead of a single fixed % for every symbol.
+        const atrN = Math.min(14, prior.length);
+        const atrSample = prior.slice(-atrN);
+        const atr = atrSample.length
+          ? atrSample.reduce((sum, c) => sum + (parseFloat(c[2]) - parseFloat(c[3])), 0) / atrSample.length
+          : 0;
+        const pctBufAbs = (side === 'buy' ? lastLow : lastHigh) * bufMult;
+        const atrBufAbs = atr * settings.atrMult;
+        const bufAbs = Math.max(pctBufAbs, atrBufAbs);
+        const sl = side === 'buy' ? lastLow - bufAbs : lastHigh + bufAbs;
         const target = side === 'buy' ? priorHigh : priorLow; // qarama-qarshi likvidlik
         const risk = Math.abs(entry - sl);
         const tp = side === 'buy' ? entry + risk * settings.riskReward : entry - risk * settings.riskReward;
         const riskPct = entry ? (risk / entry) * 100 : 0;
+
+        // cooldown: skip re-signaling the same symbol+side right after it just closed
+        const cooldownKey = out.symbol + '_' + side;
+        const lastClose_ts = lastClosedAt[cooldownKey];
+        const inCooldown = lastClose_ts && (Date.now() - lastClose_ts) < settings.cooldownMinutes * 60000;
 
         let confluence = 0;
         if(out.funding !== null){
@@ -1023,7 +1069,7 @@
           if(side === 'sell' && out.funding > settings.fundingThreshold) confluence++;
         }
 
-        out.trade = { side, entry, sl, tp, target, riskPct, confluence, rr: settings.riskReward };
+        out.trade = { side, entry, sl, tp, target, riskPct, confluence, rr: settings.riskReward, cooldown: !!inCooldown };
       }
 
       // reuse klines for OI-divergence price reference (~60 min back at 15m => 4 candles)
@@ -1087,13 +1133,20 @@
           const t = r.trade;
           const key = r.symbol + ':trade:' + t.side;
           activeTrades.push(r);
-          cycleSignals.push({
-            symbol: r.symbol, key,
-            type: t.side === 'buy' ? 'long' : 'short',
-            msg: (t.side === 'buy' ? 'BUY' : 'SELL') + ' signal — Entry ' + formatPrice(t.entry) +
-                 ', SL ' + formatPrice(t.sl) + ', TP ' + formatPrice(t.tp),
-            trade: { side: t.side, entry: t.entry, sl: t.sl, tp: t.tp }
-          });
+          // Suppress pushing a *new* tracked signal when: (a) this symbol+side is
+          // still cooling down after its last TP/SL close, or (b) there's already
+          // an open (unresolved) trade tracked for this exact symbol+side — avoids
+          // duplicate/overlapping positions and rapid-fire re-signaling (whipsaw).
+          const alreadyOpen = openTrades.some(ot => ot.symbol === r.symbol && ot.side === t.side);
+          if(!t.cooldown && !alreadyOpen){
+            cycleSignals.push({
+              symbol: r.symbol, key,
+              type: t.side === 'buy' ? 'long' : 'short',
+              msg: (t.side === 'buy' ? 'BUY' : 'SELL') + ' signal — Entry ' + formatPrice(t.entry) +
+                   ', SL ' + formatPrice(t.sl) + ', TP ' + formatPrice(t.tp),
+              trade: { side: t.side, entry: t.entry, sl: t.sl, tp: t.tp }
+            });
+          }
         }
         if(r.diverg){
           const key = r.symbol + ':diverg:' + r.diverg.dir;
@@ -1214,6 +1267,7 @@
         resolved = true;
         const h = signalHistory.find(x => x.id === ot.id);
         if(h){ h.outcome = hit; h.closePrice = price; h.closedTs = now.toISOString(); }
+        lastClosedAt[ot.symbol + '_' + ot.side] = now.getTime();
         if(settings.tgEnabled){
           const base = ot.symbol.replace('USDT','');
           const label = hit === 'tp' ? '✅ TAKE PROFIT' : '🛑 STOP LOSS';
@@ -1224,6 +1278,7 @@
       }
     });
     openTrades = stillOpen;
+    if(resolved) saveCooldowns();
     return resolved;
   }
 
