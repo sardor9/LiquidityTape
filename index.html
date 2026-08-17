@@ -1025,7 +1025,7 @@
       apiGet("/fapi/v1/klines", {symbol, interval: settings.sweepInterval, limit: settings.sweepLookback + 1}).catch(() => null),
       apiGet("/futures/data/openInterestHist", {symbol, period: "15m", limit: 5}).catch(() => null),
       settings.h4ConfirmEnabled
-        ? apiGet("/fapi/v1/klines", {symbol, interval: "4h", limit: settings.h4Lookback + 1}).catch(() => null)
+        ? apiGet("/fapi/v1/klines", {symbol, interval: "4h", limit: settings.h4Lookback + 3}).catch(() => null)
         : Promise.resolve(null),
     ]);
 
@@ -1047,21 +1047,25 @@
       if(out.price === null) out.price = parseFloat(premium.markPrice);
     }
 
-    // CRT-style higher-timeframe bias: has the prior H4 range's high or low been
-    // swept recently? Doesn't gate the M15 signal — it's a confluence flag so both
-    // "confirmed" and "unconfirmed" signals still show, marked accordingly.
-    if(settings.h4ConfirmEnabled && h4Klines && h4Klines.length >= settings.h4Lookback + 1){
-      const h4Prior = h4Klines.slice(0, -1);
-      const h4Last = h4Klines[h4Klines.length - 1];
-      const h4PriorHigh = Math.max(...h4Prior.map(c => parseFloat(c[2])));
-      const h4PriorLow = Math.min(...h4Prior.map(c => parseFloat(c[3])));
-      const h4LastHigh = parseFloat(h4Last[2]);
-      const h4LastLow = parseFloat(h4Last[3]);
-      const h4LastClose = parseFloat(h4Last[4]);
-      if(h4LastHigh > h4PriorHigh && h4LastClose < h4PriorHigh){
-        out.h4Bias = 'sell'; // H4 high swept -> bearish bias, look for M15 SELL
-      } else if(h4LastLow < h4PriorLow && h4LastClose > h4PriorLow){
-        out.h4Bias = 'buy';  // H4 low swept -> bullish bias, look for M15 BUY
+    // CRT-style higher-timeframe bias: has an H4 range recently (last few candles,
+    // not only the very latest) been swept and reclaimed? Scanning a small recent
+    // window instead of only the single latest H4 candle means a real H4 sweep
+    // stays "active" as bias for a while, instead of resetting to null almost
+    // every cycle (H4 candles only close every 4h).
+    if(settings.h4ConfirmEnabled && h4Klines && h4Klines.length >= settings.h4Lookback + 2){
+      const scanCount = Math.min(3, h4Klines.length - 1);
+      for(let i = 0; i < scanCount; i++){
+        const idx = h4Klines.length - 1 - i;
+        if(idx < 1) break;
+        const priorSlice = h4Klines.slice(Math.max(0, idx - settings.h4Lookback), idx);
+        if(priorSlice.length < 2) continue;
+        const pHigh = Math.max(...priorSlice.map(c => parseFloat(c[2])));
+        const pLow = Math.min(...priorSlice.map(c => parseFloat(c[3])));
+        const cHigh = parseFloat(h4Klines[idx][2]);
+        const cLow = parseFloat(h4Klines[idx][3]);
+        const cClose = parseFloat(h4Klines[idx][4]);
+        if(cHigh > pHigh && cClose < pHigh){ out.h4Bias = 'sell'; break; }
+        if(cLow < pLow && cClose > pLow){ out.h4Bias = 'buy'; break; }
       }
     }
 
@@ -1110,8 +1114,10 @@
           if(side === 'buy' && out.funding < -settings.fundingThreshold) confluence++;
           if(side === 'sell' && out.funding > settings.fundingThreshold) confluence++;
         }
-        const h4Confirmed = settings.h4ConfirmEnabled ? (out.h4Bias === side) : null; // null = confirmation off
-        if(h4Confirmed) confluence++;
+        const h4Confirmed = settings.h4ConfirmEnabled
+          ? (out.h4Bias === null ? null : (out.h4Bias === side)) // null = H4'da hali aniq bias yo'q
+          : null;
+        if(h4Confirmed === true) confluence++;
 
         out.trade = { side, entry, sl, tp, target, riskPct, confluence, rr: settings.riskReward, cooldown: !!inCooldown, h4Confirmed };
       }
@@ -1183,7 +1189,7 @@
           // duplicate/overlapping positions and rapid-fire re-signaling (whipsaw).
           const alreadyOpen = openTrades.some(ot => ot.symbol === r.symbol && ot.side === t.side);
           if(!t.cooldown && !alreadyOpen){
-            const h4Tag = t.h4Confirmed === true ? ' · H4 ✅ tasdiqlangan' : (t.h4Confirmed === false ? ' · H4 tasdiqlanmagan' : '');
+            const h4Tag = t.h4Confirmed === true ? ' · H4 ✅ tasdiqlangan' : (t.h4Confirmed === false ? ' · H4 qarama-qarshi' : '');
             cycleSignals.push({
               symbol: r.symbol, key,
               type: t.side === 'buy' ? 'long' : 'short',
@@ -1374,7 +1380,7 @@
     const tags = [];
     if(fundingMatch) tags.push('<span class="tc-conf">✓ funding mos keladi</span>');
     if(t.h4Confirmed === true) tags.push('<span class="tc-conf tc-h4">✓ H4 tasdiqlangan</span>');
-    else if(t.h4Confirmed === false) tags.push('<span class="tc-conf tc-h4-off">H4 tasdiqlanmagan</span>');
+    else if(t.h4Confirmed === false) tags.push('<span class="tc-conf tc-h4-off">H4 qarama-qarshi</span>');
     return '<div class="trade-card ' + t.side + '">' +
       '<div class="tc-head">' +
         '<div class="tc-head-left">' +
