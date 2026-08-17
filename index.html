@@ -247,6 +247,7 @@
   }
   .tc-tags{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;}
   .tc-h4{color:var(--long);background:rgba(52,211,153,0.12);}
+  .tc-cisd{color:var(--diverg);background:rgba(96,165,250,0.12);}
   .tc-h4-off{color:var(--text-faint);background:rgba(255,255,255,0.05);}
   .tc-grid{
     display:grid;
@@ -637,6 +638,18 @@
       </div>
 
       <div class="field">
+        <label><input type="checkbox" id="cisdConfirmEnabled" style="width:auto;margin-right:7px;vertical-align:middle;">Faqat CISD tasdiqlangandan keyin signal berish (sweep + keyingi structure break)</label>
+        <div class="hint">Yoqilganda: sweep bo'lgan zahoti emas, balki narx sweep'dan oldingi legning "CISD" darajasini (o'sha legning eng boshlang'ich shami ochilish narxini) sindirib yopilgandan keyingina signal chiqadi — ya'ni sizning chizganingizdek ikki bosqichli tasdiq.</div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>CISD skanerlash oynasi (sham soni)</label>
+          <input type="number" id="cisdScanWindow" step="1" min="3" max="20" value="8">
+        </div>
+        <div class="field"></div>
+      </div>
+
+      <div class="field">
         <label><input type="checkbox" id="h4ConfirmEnabled" style="width:auto;margin-right:7px;vertical-align:middle;">CRT: H4 sweep bilan tasdiqlash (M15 signalga H4 ✅/tasdiqlanmagan yorlig'i qo'shiladi)</label>
       </div>
       <div class="field-row">
@@ -712,6 +725,8 @@
     cooldownMinutes: 30,      // min minutes before re-signaling same symbol+side after a TP/SL close
     h4ConfirmEnabled: true,   // CRT-style: only bias-confirm entries that align with an H4 sweep
     h4Lookback: 20,           // candles of H4 history used to find the prior H4 high/low
+    cisdConfirmEnabled: true, // wait for a CISD close-break after the sweep, instead of signaling on the sweep candle itself
+    cisdScanWindow: 8,        // recent candles searched for a sweep -> CISD confirmation pair
     tgEnabled: false,
     tgChatId: "",
     refreshMs: 300000
@@ -822,6 +837,8 @@
     document.getElementById('slBuffer').value = settings.slBufferPct;
     document.getElementById('atrMult').value = settings.atrMult;
     document.getElementById('cooldownMinutes').value = settings.cooldownMinutes;
+    document.getElementById('cisdConfirmEnabled').checked = !!settings.cisdConfirmEnabled;
+    document.getElementById('cisdScanWindow').value = settings.cisdScanWindow;
     document.getElementById('h4ConfirmEnabled').checked = !!settings.h4ConfirmEnabled;
     document.getElementById('h4Lookback').value = settings.h4Lookback;
     document.getElementById('tgEnabled').checked = !!settings.tgEnabled;
@@ -847,6 +864,8 @@
     settings.atrMult = Math.max(0, isNaN(atrMultRaw) ? DEFAULTS.atrMult : atrMultRaw);
     const cooldownRaw = parseInt(document.getElementById('cooldownMinutes').value, 10);
     settings.cooldownMinutes = Math.max(0, isNaN(cooldownRaw) ? DEFAULTS.cooldownMinutes : cooldownRaw);
+    settings.cisdConfirmEnabled = document.getElementById('cisdConfirmEnabled').checked;
+    settings.cisdScanWindow = clamp(parseInt(document.getElementById('cisdScanWindow').value,10) || DEFAULTS.cisdScanWindow, 3, 20);
     settings.h4ConfirmEnabled = document.getElementById('h4ConfirmEnabled').checked;
     settings.h4Lookback = clamp(parseInt(document.getElementById('h4Lookback').value,10) || DEFAULTS.h4Lookback, 2, 50);
     settings.tgEnabled = document.getElementById('tgEnabled').checked;
@@ -1022,7 +1041,7 @@
   async function getSymbolSignals(symbol, base){
     const [premium, klines, oiHist, h4Klines] = await Promise.all([
       apiGet("/fapi/v1/premiumIndex", {symbol}).catch(() => null),
-      apiGet("/fapi/v1/klines", {symbol, interval: settings.sweepInterval, limit: settings.sweepLookback + 1}).catch(() => null),
+      apiGet("/fapi/v1/klines", {symbol, interval: settings.sweepInterval, limit: settings.sweepLookback + (settings.cisdConfirmEnabled ? settings.cisdScanWindow : 1) + 1}).catch(() => null),
       apiGet("/futures/data/openInterestHist", {symbol, period: "15m", limit: 5}).catch(() => null),
       settings.h4ConfirmEnabled
         ? apiGet("/fapi/v1/klines", {symbol, interval: "4h", limit: settings.h4Lookback + 3}).catch(() => null)
@@ -1069,36 +1088,98 @@
       }
     }
 
-    if(klines && klines.length >= settings.sweepLookback + 1){
-      const prior = klines.slice(0, -1);
-      const last = klines[klines.length - 1];
-      const priorHigh = Math.max(...prior.map(c => parseFloat(c[2])));
-      const priorLow = Math.min(...prior.map(c => parseFloat(c[3])));
-      const lastHigh = parseFloat(last[2]);
-      const lastLow = parseFloat(last[3]);
-      const lastClose = parseFloat(last[4]);
+    // Settings-driven window: with CISD confirmation on, we need extra recent
+    // candles beyond the reference range to find both the sweep AND its later
+    // confirmation close.
+    const cisdOn = settings.cisdConfirmEnabled;
+    const scanWindow = cisdOn ? settings.cisdScanWindow : 1;
+    const neededLen = settings.sweepLookback + scanWindow + 1;
 
-      if(lastHigh > priorHigh && lastClose < priorHigh){
-        out.sweep = 'high'; out.sweepRank = 2;
-      } else if(lastLow < priorLow && lastClose > priorLow){
-        out.sweep = 'low'; out.sweepRank = 2;
+    if(klines && klines.length >= neededLen){
+      const refRange = klines.slice(0, klines.length - scanWindow); // fixed reference liquidity pool
+      const scan = klines.slice(klines.length - scanWindow);        // recent candles: sweep + CISD search here
+      const priorHigh = Math.max(...refRange.map(c => parseFloat(c[2])));
+      const priorLow = Math.min(...refRange.map(c => parseFloat(c[3])));
+
+      let side = null;         // 'buy' | 'sell'
+      let sweepAnchor = null;  // price the SL sits beyond — the actual swept wick extreme
+      let confirmIdx = null;   // index within `scan` where entry triggers
+
+      if(cisdOn){
+        // CISD (Change in State of Delivery): after a sweep, find the run of
+        // same-direction candles that formed the leg INTO the sweep, take the
+        // OPEN of the earliest candle in that run as the CISD level, then wait
+        // for a later candle to CLOSE beyond that level — that's the entry,
+        // not the sweep itself.
+        const isBullish = c => parseFloat(c[4]) > parseFloat(c[1]);
+        const isBearish = c => parseFloat(c[4]) < parseFloat(c[1]);
+        const lastIdx = scan.length - 1;
+
+        function lastSweepIdx(getWick, level, above){
+          let found = -1;
+          for(let i = 0; i < scan.length; i++){
+            const w = getWick(scan[i]);
+            if(above ? w > level : w < level) found = i;
+          }
+          return found;
+        }
+        function cisdConfirmIdx(sweepIdx, matchFn, dir){
+          let j = sweepIdx, cisdLevel = null;
+          if(matchFn(scan[j])){ cisdLevel = parseFloat(scan[j][1]); } else { j = sweepIdx - 1; }
+          while(j >= 0 && matchFn(scan[j])){ cisdLevel = parseFloat(scan[j][1]); j--; }
+          if(cisdLevel === null) return null;
+          for(let k = sweepIdx; k < scan.length; k++){
+            const close = parseFloat(scan[k][4]);
+            if(dir === 'sell' && close < cisdLevel) return k;
+            if(dir === 'buy' && close > cisdLevel) return k;
+          }
+          return null; // swept, but CISD hasn't broken yet — not a signal
+        }
+
+        const sweepHighIdx = lastSweepIdx(c => parseFloat(c[2]), priorHigh, true);
+        if(sweepHighIdx >= 0){
+          const cIdx = cisdConfirmIdx(sweepHighIdx, isBullish, 'sell');
+          if(cIdx === lastIdx){
+            side = 'sell';
+            sweepAnchor = Math.max(...scan.slice(sweepHighIdx, lastIdx + 1).map(c => parseFloat(c[2])));
+            confirmIdx = cIdx;
+          }
+        }
+        if(side === null){
+          const sweepLowIdx = lastSweepIdx(c => parseFloat(c[3]), priorLow, false);
+          if(sweepLowIdx >= 0){
+            const cIdx = cisdConfirmIdx(sweepLowIdx, isBearish, 'buy');
+            if(cIdx === lastIdx){
+              side = 'buy';
+              sweepAnchor = Math.min(...scan.slice(sweepLowIdx, lastIdx + 1).map(c => parseFloat(c[3])));
+              confirmIdx = cIdx;
+            }
+          }
+        }
+      } else {
+        // legacy: sweep + close-back within the same candle (no CISD wait)
+        const last = scan[scan.length - 1];
+        const lastHigh = parseFloat(last[2]), lastLow = parseFloat(last[3]), lastClose = parseFloat(last[4]);
+        if(lastHigh > priorHigh && lastClose < priorHigh){ side = 'sell'; sweepAnchor = lastHigh; confirmIdx = scan.length - 1; }
+        else if(lastLow < priorLow && lastClose > priorLow){ side = 'buy'; sweepAnchor = lastLow; confirmIdx = scan.length - 1; }
       }
 
-      if(out.sweep){
-        const side = out.sweep === 'low' ? 'buy' : 'sell';
+      if(side){
+        out.sweep = side === 'sell' ? 'high' : 'low';
+        out.sweepRank = 2;
+
+        const entry = parseFloat(scan[confirmIdx][4]); // close of the CISD-confirming candle
         const bufMult = settings.slBufferPct / 100;
-        const entry = lastClose;
-        // ATR (average true range) over the prior candles — buffer scales with each
-        // coin's own volatility instead of a single fixed % for every symbol.
-        const atrN = Math.min(14, prior.length);
-        const atrSample = prior.slice(-atrN);
+        // ATR (average true range) over the recent candles — buffer scales with
+        // each coin's own volatility instead of one fixed % for every symbol.
+        const atrSample = klines.slice(-Math.min(14, klines.length));
         const atr = atrSample.length
           ? atrSample.reduce((sum, c) => sum + (parseFloat(c[2]) - parseFloat(c[3])), 0) / atrSample.length
           : 0;
-        const pctBufAbs = (side === 'buy' ? lastLow : lastHigh) * bufMult;
+        const pctBufAbs = sweepAnchor * bufMult;
         const atrBufAbs = atr * settings.atrMult;
         const bufAbs = Math.max(pctBufAbs, atrBufAbs);
-        const sl = side === 'buy' ? lastLow - bufAbs : lastHigh + bufAbs;
+        const sl = side === 'buy' ? sweepAnchor - bufAbs : sweepAnchor + bufAbs;
         const target = side === 'buy' ? priorHigh : priorLow; // qarama-qarshi likvidlik
         const risk = Math.abs(entry - sl);
         const tp = side === 'buy' ? entry + risk * settings.riskReward : entry - risk * settings.riskReward;
@@ -1119,7 +1200,7 @@
           : null;
         if(h4Confirmed === true) confluence++;
 
-        out.trade = { side, entry, sl, tp, target, riskPct, confluence, rr: settings.riskReward, cooldown: !!inCooldown, h4Confirmed };
+        out.trade = { side, entry, sl, tp, target, riskPct, confluence, rr: settings.riskReward, cooldown: !!inCooldown, h4Confirmed, cisd: cisdOn };
       }
 
       // reuse klines for OI-divergence price reference (~60 min back at 15m => 4 candles)
@@ -1190,11 +1271,12 @@
           const alreadyOpen = openTrades.some(ot => ot.symbol === r.symbol && ot.side === t.side);
           if(!t.cooldown && !alreadyOpen){
             const h4Tag = t.h4Confirmed === true ? ' · H4 ✅ tasdiqlangan' : (t.h4Confirmed === false ? ' · H4 qarama-qarshi' : '');
+            const cisdTag = t.cisd ? ' · CISD tasdiqlangan' : '';
             cycleSignals.push({
               symbol: r.symbol, key,
               type: t.side === 'buy' ? 'long' : 'short',
               msg: (t.side === 'buy' ? 'BUY' : 'SELL') + ' signal — Entry ' + formatPrice(t.entry) +
-                   ', SL ' + formatPrice(t.sl) + ', TP ' + formatPrice(t.tp) + h4Tag,
+                   ', SL ' + formatPrice(t.sl) + ', TP ' + formatPrice(t.tp) + cisdTag + h4Tag,
               trade: { side: t.side, entry: t.entry, sl: t.sl, tp: t.tp, h4Confirmed: t.h4Confirmed }
             });
           }
@@ -1378,6 +1460,7 @@
     const fundingMatch = (t.side === 'buy' && r.funding !== null && r.funding < -settings.fundingThreshold) ||
                           (t.side === 'sell' && r.funding !== null && r.funding > settings.fundingThreshold);
     const tags = [];
+    if(t.cisd) tags.push('<span class="tc-conf tc-cisd">✓ CISD tasdiqlangan</span>');
     if(fundingMatch) tags.push('<span class="tc-conf">✓ funding mos keladi</span>');
     if(t.h4Confirmed === true) tags.push('<span class="tc-conf tc-h4">✓ H4 tasdiqlangan</span>');
     else if(t.h4Confirmed === false) tags.push('<span class="tc-conf tc-h4-off">H4 qarama-qarshi</span>');
