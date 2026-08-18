@@ -166,7 +166,10 @@
     gap:8px;
     border-right:1px solid var(--border);
     color:var(--text-dim);
+    text-decoration:none;
+    cursor:pointer;
   }
+  .tape-item:hover .sym{text-decoration:underline;}
   .tape-item .t{color:var(--text-faint);}
   .tape-item .sym{color:var(--text);font-weight:700;}
   .tape-item.long .msg{color:var(--long);}
@@ -215,12 +218,19 @@
     text-align:center;
   }
   .trade-card{
+    display:block;
     border:1px solid var(--border);
     background:var(--panel);
     border-radius:10px;
     padding:14px 16px;
     border-left:3px solid var(--text-faint);
+    text-decoration:none;
+    color:inherit;
+    cursor:pointer;
+    transition:border-color 0.15s, transform 0.1s;
   }
+  .trade-card:hover{border-color:var(--gold);}
+  .trade-card:active{transform:scale(0.99);}
   .trade-card.buy{border-left-color:var(--long);}
   .trade-card.sell{border-left-color:var(--short);}
   .tc-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
@@ -248,6 +258,8 @@
   .tc-tags{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;}
   .tc-h4{color:var(--long);background:rgba(52,211,153,0.12);}
   .tc-cisd{color:var(--diverg);background:rgba(96,165,250,0.12);}
+  .hist-sym{color:var(--text);text-decoration:none;font-weight:600;}
+  .hist-sym:hover{color:var(--gold);text-decoration:underline;}
   .tc-h4-off{color:var(--text-faint);background:rgba(255,255,255,0.05);}
   .tc-grid{
     display:grid;
@@ -1370,11 +1382,11 @@
   }
   function tapeItemHtml(s){
     const time = s.ts.toLocaleTimeString('uz-UZ', {hour:'2-digit', minute:'2-digit'});
-    return '<div class="tape-item ' + s.type + '">' +
+    return '<a class="tape-item ' + s.type + '" href="' + tradingViewUrl(s.symbol) + '" target="_blank" rel="noopener">' +
       '<span class="t">' + time + '</span>' +
       '<span class="sym">' + s.symbol.replace('USDT','') + '</span>' +
       '<span class="msg">' + escapeHtml(s.msg) + '</span>' +
-      '</div>';
+      '</a>';
   }
 
   // Checks each still-open tracked trade against the latest fetched prices and
@@ -1440,7 +1452,7 @@
       } else {
         resultHtml = '<span class="res-open">⏳ Faol</span>';
       }
-      return '<tr><td>' + time + '</td><td>' + base + '</td><td class="' + cls + '">' + label + '</td><td>' + escapeHtml(h.msg) + '</td><td>' + resultHtml + '</td></tr>';
+      return '<tr><td>' + time + '</td><td><a class="hist-sym" href="' + tradingViewUrl(h.symbol) + '" target="_blank" rel="noopener">' + base + '</a></td><td class="' + cls + '">' + label + '</td><td>' + escapeHtml(h.msg) + '</td><td>' + resultHtml + '</td></tr>';
     }).join('');
   }
 
@@ -1464,7 +1476,8 @@
     if(fundingMatch) tags.push('<span class="tc-conf">✓ funding mos keladi</span>');
     if(t.h4Confirmed === true) tags.push('<span class="tc-conf tc-h4">✓ H4 tasdiqlangan</span>');
     else if(t.h4Confirmed === false) tags.push('<span class="tc-conf tc-h4-off">H4 qarama-qarshi</span>');
-    return '<div class="trade-card ' + t.side + '">' +
+    const tvUrl = tradingViewUrl(r.symbol);
+    return '<a class="trade-card ' + t.side + '" href="' + tvUrl + '" target="_blank" rel="noopener" title="TradingView\'da ochish">' +
       '<div class="tc-head">' +
         '<div class="tc-head-left">' +
           '<span class="tc-side">' + (t.side === 'buy' ? 'BUY' : 'SELL') + '</span>' +
@@ -1479,7 +1492,12 @@
         '<div><label>Risk</label><span>' + t.riskPct.toFixed(2) + '%</span></div>' +
       '</div>' +
       '<div class="tc-note">R:R 1:' + t.rr + ' &middot; Qarama-qarshi likvidlik maqsadi: ' + formatPrice(t.target) + '</div>' +
-      '</div>';
+      '</a>';
+  }
+
+  function tradingViewUrl(symbol){
+    // Binance USDT-M perpetual futures symbol on TradingView uses the ".P" suffix
+    return 'https://www.tradingview.com/chart/?symbol=BINANCE%3A' + encodeURIComponent(symbol) + '.P';
   }
 
   function renderTable(){
