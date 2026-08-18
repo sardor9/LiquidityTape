@@ -269,6 +269,9 @@
   }
   .tc-grid label{display:block;font-size:10px;color:var(--text-faint);letter-spacing:0.4px;text-transform:uppercase;margin-bottom:2px;}
   .tc-grid span{font-family:var(--font-mono);font-size:13px;font-variant-numeric:tabular-nums;}
+  .tc-grid span.copyable{cursor:pointer;border-bottom:1px dashed transparent;transition:border-color 0.15s, color 0.15s;}
+  .tc-grid span.copyable:hover{border-bottom-color:currentColor;}
+  .tc-grid span.copyable.copied{color:var(--gold)!important;border-bottom-color:transparent;}
   .tc-note{font-size:11.5px;color:var(--text-dim);line-height:1.5;padding-top:8px;border-top:1px solid var(--border);}
 
   /* ---------- Controls row ---------- */
@@ -1486,9 +1489,9 @@
         '<div class="tc-tags">' + tags.join('') + '</div>' +
       '</div>' +
       '<div class="tc-grid">' +
-        '<div><label>Entry</label><span>' + formatPrice(t.entry) + '</span></div>' +
-        '<div><label>Stop Loss</label><span class="down">' + formatPrice(t.sl) + '</span></div>' +
-        '<div><label>Take Profit</label><span class="up">' + formatPrice(t.tp) + '</span></div>' +
+        '<div><label>Entry</label><span class="copyable" onclick="copyTradeValue(event,\'' + formatPrice(t.entry) + '\')">' + formatPrice(t.entry) + '</span></div>' +
+        '<div><label>Stop Loss</label><span class="down copyable" onclick="copyTradeValue(event,\'' + formatPrice(t.sl) + '\')">' + formatPrice(t.sl) + '</span></div>' +
+        '<div><label>Take Profit</label><span class="up copyable" onclick="copyTradeValue(event,\'' + formatPrice(t.tp) + '\')">' + formatPrice(t.tp) + '</span></div>' +
         '<div><label>Risk</label><span>' + t.riskPct.toFixed(2) + '%</span></div>' +
       '</div>' +
       '<div class="tc-note">R:R 1:' + t.rr + ' &middot; Qarama-qarshi likvidlik maqsadi: ' + formatPrice(t.target) + '</div>' +
@@ -1499,6 +1502,40 @@
     // Binance USDT-M perpetual futures symbol on TradingView uses the ".P" suffix
     return 'https://www.tradingview.com/chart/?symbol=BINANCE%3A' + encodeURIComponent(symbol) + '.P';
   }
+
+  // Copies an Entry/SL/TP value to the clipboard when clicked, without triggering
+  // the card's outer <a> link (which opens TradingView). Shows a brief "nusxalandi"
+  // confirmation on the clicked element itself.
+  function copyTradeValue(evt, value){
+    evt.preventDefault();
+    evt.stopPropagation();
+    const el = evt.currentTarget;
+    const doFeedback = () => {
+      const original = el.textContent;
+      el.classList.add('copied');
+      el.textContent = '✓ nusxalandi';
+      setTimeout(() => { el.textContent = original; el.classList.remove('copied'); }, 900);
+    };
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(value).then(doFeedback).catch(() => fallbackCopy(value, doFeedback));
+    } else {
+      fallbackCopy(value, doFeedback);
+    }
+  }
+  function fallbackCopy(value, cb){
+    try{
+      const ta = document.createElement('textarea');
+      ta.value = value;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      cb();
+    }catch(e){}
+  }
+  window.copyTradeValue = copyTradeValue;
 
   function renderTable(){
     const q = searchInput.value.trim().toUpperCase();
