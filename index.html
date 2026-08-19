@@ -451,6 +451,16 @@
     padding:9px 11px;
     border-radius:8px;
   }
+  .field select{
+    width:100%;
+    font-family:var(--font-mono);
+    font-size:13px;
+    color:var(--text);
+    background:var(--panel-alt);
+    border:1px solid var(--border);
+    padding:9px 11px;
+    border-radius:8px;
+  }
   .field .hint{font-size:11px;color:var(--text-faint);margin-top:5px;line-height:1.4;}
   .field-row{display:flex;gap:12px;}
   .field-row .field{flex:1;}
@@ -653,26 +663,25 @@
       </div>
 
       <div class="field">
-        <label><input type="checkbox" id="cisdConfirmEnabled" style="width:auto;margin-right:7px;vertical-align:middle;">Faqat CISD tasdiqlangandan keyin signal berish (sweep + keyingi structure break)</label>
-        <div class="hint">Yoqilganda: sweep bo'lgan zahoti emas, balki narx sweep'dan oldingi legning "CISD" darajasini (o'sha legning eng boshlang'ich shami ochilish narxini) sindirib yopilgandan keyingina signal chiqadi — ya'ni sizning chizganingizdek ikki bosqichli tasdiq.</div>
+        <label>Entry tasdiqlash rejimi</label>
+        <select id="entryConfirmMode">
+          <option value="off">Yo'q — sweep + close-back (darhol, eng ko'p signal)</option>
+          <option value="cisd">CISD — structure break (birinchi toza LTF signal)</option>
+          <option value="ifvg">iFVG retest — FVG invalidatsiya + qayta test (eng aniq, kamroq signal)</option>
+        </select>
+        <div class="hint">"Yo'q": sweep bo'lgan zahoti signal. "CISD": sweep'dan oldingi legning boshlang'ich ochilish narxi sinib yopilgach signal (LTF Signatures slaydiga ko'ra — odatda shu yetarli). "iFVG retest": sweep leg'ida FVG hosil bo'lib, keyin invalidatsiya qilinib, narx o'sha zonani qayta test qilgandagina signal — eng qattiq filtr, sezilarli kamroq signal beradi.</div>
       </div>
       <div class="field-row">
         <div class="field">
-          <label>CISD skanerlash oynasi (sham soni)</label>
+          <label>Entry qidirish oynasi (sham soni)</label>
           <input type="number" id="cisdScanWindow" step="1" min="3" max="20" value="8">
         </div>
         <div class="field"></div>
       </div>
 
       <div class="field">
-        <label><input type="checkbox" id="h4ConfirmEnabled" style="width:auto;margin-right:7px;vertical-align:middle;">CRT: H4 sweep bilan tasdiqlash (M15 signalga H4 ✅/tasdiqlanmagan yorlig'i qo'shiladi)</label>
-      </div>
-      <div class="field-row">
-        <div class="field">
-          <label>H4 lookback (sham soni)</label>
-          <input type="number" id="h4Lookback" step="1" min="2" max="50" value="20">
-        </div>
-        <div class="field"></div>
+        <label><input type="checkbox" id="h4ConfirmEnabled" style="width:auto;margin-right:7px;vertical-align:middle;">CRT rejimi: H4 (oldingi yopilgan sham) diapazonini asos qilib olish</label>
+        <div class="hint">Yoqilganda: CRTH/CRTL = oldingi to'liq yopilgan H4 shamning eng yuqori/past nuqtasi (Candle 1). Sweep + Entry tasdiqlash shu daraja atrofida, sizning Sweep interval'ingizda (masalan 15m) qidiriladi — "4 hour CRT &gt; 15M TSQ" modeliga mos. O'chirilsa, eski usul — M15'ning o'z rolling lookback diapazoni ishlatiladi.</div>
       </div>
 
       <div class="field">
@@ -738,9 +747,8 @@
     slBufferPct: 0.15,        // % beyond the sweep wick (floor — real buffer is max(this, ATR-based))
     atrMult: 0.5,             // SL buffer = max(slBufferPct, ATR * atrMult)
     cooldownMinutes: 30,      // min minutes before re-signaling same symbol+side after a TP/SL close
-    h4ConfirmEnabled: true,   // CRT-style: only bias-confirm entries that align with an H4 sweep
-    h4Lookback: 20,           // candles of H4 history used to find the prior H4 high/low
-    cisdConfirmEnabled: true, // wait for a CISD close-break after the sweep, instead of signaling on the sweep candle itself
+    h4ConfirmEnabled: true,   // strict CRT mode: HTF range = single last-closed H4 candle (not a lookback window)
+    entryConfirmMode: 'cisd',    // 'off' | 'cisd' | 'ifvg' — how entries are confirmed after a sweep
     cisdScanWindow: 8,        // recent candles searched for a sweep -> CISD confirmation pair
     tgEnabled: false,
     tgChatId: "",
@@ -771,6 +779,11 @@
         merged = Object.assign({}, DEFAULTS, JSON.parse(raw));
       }
     }catch(e){}
+    // migrate old boolean cisdConfirmEnabled to the new 3-way entryConfirmMode
+    if(typeof merged.cisdConfirmEnabled === 'boolean'){
+      merged.entryConfirmMode = merged.cisdConfirmEnabled ? 'cisd' : 'off';
+      delete merged.cisdConfirmEnabled;
+    }
     // migrate old comma-string format to array
     if(typeof merged.customCoins === 'string'){
       merged.customCoins = merged.customCoins
@@ -852,10 +865,9 @@
     document.getElementById('slBuffer').value = settings.slBufferPct;
     document.getElementById('atrMult').value = settings.atrMult;
     document.getElementById('cooldownMinutes').value = settings.cooldownMinutes;
-    document.getElementById('cisdConfirmEnabled').checked = !!settings.cisdConfirmEnabled;
+    document.getElementById('entryConfirmMode').value = settings.entryConfirmMode;
     document.getElementById('cisdScanWindow').value = settings.cisdScanWindow;
     document.getElementById('h4ConfirmEnabled').checked = !!settings.h4ConfirmEnabled;
-    document.getElementById('h4Lookback').value = settings.h4Lookback;
     document.getElementById('tgEnabled').checked = !!settings.tgEnabled;
     document.getElementById('tgChatId').value = settings.tgChatId || "";
     settingsModal.classList.add('show');
@@ -879,10 +891,9 @@
     settings.atrMult = Math.max(0, isNaN(atrMultRaw) ? DEFAULTS.atrMult : atrMultRaw);
     const cooldownRaw = parseInt(document.getElementById('cooldownMinutes').value, 10);
     settings.cooldownMinutes = Math.max(0, isNaN(cooldownRaw) ? DEFAULTS.cooldownMinutes : cooldownRaw);
-    settings.cisdConfirmEnabled = document.getElementById('cisdConfirmEnabled').checked;
+    settings.entryConfirmMode = document.getElementById('entryConfirmMode').value;
     settings.cisdScanWindow = clamp(parseInt(document.getElementById('cisdScanWindow').value,10) || DEFAULTS.cisdScanWindow, 3, 20);
     settings.h4ConfirmEnabled = document.getElementById('h4ConfirmEnabled').checked;
-    settings.h4Lookback = clamp(parseInt(document.getElementById('h4Lookback').value,10) || DEFAULTS.h4Lookback, 2, 50);
     settings.tgEnabled = document.getElementById('tgEnabled').checked;
     settings.tgChatId = document.getElementById('tgChatId').value.trim();
     saveSettingsToStorage();
@@ -1054,12 +1065,20 @@
   }
 
   async function getSymbolSignals(symbol, base){
+    const crtMode = settings.h4ConfirmEnabled; // strict CRT: HTF range = ONE real higher-timeframe candle
+    const entryMode = settings.entryConfirmMode; // 'off' | 'cisd' | 'ifvg'
+    const scanWindow = entryMode !== 'off' ? settings.cisdScanWindow : 1;
+    // In CRT mode the M15 range comes from the single H4 candle, not from a rolling
+    // M15 lookback, so we only need enough M15 candles for the scan window + ATR(14).
+    const refCandlesNeeded = crtMode ? 15 : settings.sweepLookback;
+    const neededLen = refCandlesNeeded + scanWindow + 1;
+
     const [premium, klines, oiHist, h4Klines] = await Promise.all([
       apiGet("/fapi/v1/premiumIndex", {symbol}).catch(() => null),
-      apiGet("/fapi/v1/klines", {symbol, interval: settings.sweepInterval, limit: settings.sweepLookback + (settings.cisdConfirmEnabled ? settings.cisdScanWindow : 1) + 1}).catch(() => null),
+      apiGet("/fapi/v1/klines", {symbol, interval: settings.sweepInterval, limit: neededLen}).catch(() => null),
       apiGet("/futures/data/openInterestHist", {symbol, period: "15m", limit: 5}).catch(() => null),
-      settings.h4ConfirmEnabled
-        ? apiGet("/fapi/v1/klines", {symbol, interval: "4h", limit: settings.h4Lookback + 3}).catch(() => null)
+      crtMode
+        ? apiGet("/fapi/v1/klines", {symbol, interval: "4h", limit: 3}).catch(() => null)
         : Promise.resolve(null),
     ]);
 
@@ -1073,7 +1092,8 @@
       diverg: null,     // {dir, priceChange, oiChange} | null
       divergRank: 0,
       trade: null,      // {side, entry, sl, tp, target, riskPct, confluence, rr} | null
-      h4Bias: null,      // 'buy' | 'sell' | null — CRT-style H4 sweep direction, if H4 confirm is on
+      crtHigh: null,     // CRTH — high of the last CLOSED H4 candle (CRT "Candle 1"), when CRT mode is on
+      crtLow: null,      // CRTL — low of the same candle
     };
 
     if(premium){
@@ -1081,46 +1101,105 @@
       if(out.price === null) out.price = parseFloat(premium.markPrice);
     }
 
-    // CRT-style higher-timeframe bias: has an H4 range recently (last few candles,
-    // not only the very latest) been swept and reclaimed? Scanning a small recent
-    // window instead of only the single latest H4 candle means a real H4 sweep
-    // stays "active" as bias for a while, instead of resetting to null almost
-    // every cycle (H4 candles only close every 4h).
-    if(settings.h4ConfirmEnabled && h4Klines && h4Klines.length >= settings.h4Lookback + 2){
-      const scanCount = Math.min(3, h4Klines.length - 1);
-      for(let i = 0; i < scanCount; i++){
-        const idx = h4Klines.length - 1 - i;
-        if(idx < 1) break;
-        const priorSlice = h4Klines.slice(Math.max(0, idx - settings.h4Lookback), idx);
-        if(priorSlice.length < 2) continue;
-        const pHigh = Math.max(...priorSlice.map(c => parseFloat(c[2])));
-        const pLow = Math.min(...priorSlice.map(c => parseFloat(c[3])));
-        const cHigh = parseFloat(h4Klines[idx][2]);
-        const cLow = parseFloat(h4Klines[idx][3]);
-        const cClose = parseFloat(h4Klines[idx][4]);
-        if(cHigh > pHigh && cClose < pHigh){ out.h4Bias = 'sell'; break; }
-        if(cLow < pLow && cClose > pLow){ out.h4Bias = 'buy'; break; }
-      }
+    // CRT "Candle 1": the range is the single most recently CLOSED higher-timeframe
+    // (H4) candle — not a rolling multi-candle lookback. h4Klines' last entry is the
+    // still-forming current H4 candle, so the closed one sits one index back.
+    if(crtMode && h4Klines && h4Klines.length >= 2){
+      const closedH4 = h4Klines[h4Klines.length - 2];
+      out.crtHigh = parseFloat(closedH4[2]);
+      out.crtLow = parseFloat(closedH4[3]);
     }
 
-    // Settings-driven window: with CISD confirmation on, we need extra recent
-    // candles beyond the reference range to find both the sweep AND its later
-    // confirmation close.
-    const cisdOn = settings.cisdConfirmEnabled;
-    const scanWindow = cisdOn ? settings.cisdScanWindow : 1;
-    const neededLen = settings.sweepLookback + scanWindow + 1;
-
     if(klines && klines.length >= neededLen){
-      const refRange = klines.slice(0, klines.length - scanWindow); // fixed reference liquidity pool
+      const useCrtRange = crtMode && out.crtHigh !== null && out.crtLow !== null;
+      const refRange = klines.slice(0, klines.length - scanWindow); // used for ATR, and as fallback range
       const scan = klines.slice(klines.length - scanWindow);        // recent candles: sweep + CISD search here
-      const priorHigh = Math.max(...refRange.map(c => parseFloat(c[2])));
-      const priorLow = Math.min(...refRange.map(c => parseFloat(c[3])));
+      const priorHigh = useCrtRange ? out.crtHigh : Math.max(...refRange.map(c => parseFloat(c[2])));
+      const priorLow = useCrtRange ? out.crtLow : Math.min(...refRange.map(c => parseFloat(c[3])));
 
       let side = null;         // 'buy' | 'sell'
       let sweepAnchor = null;  // price the SL sits beyond — the actual swept wick extreme
       let confirmIdx = null;   // index within `scan` where entry triggers
 
-      if(cisdOn){
+      if(entryMode === 'ifvg'){
+        // iFVG retest entry: 1) sweep the range, 2) a Fair Value Gap (3-candle
+        // imbalance) forms during the manipulation leg, 3) price later closes
+        // back through that gap, invalidating it (now an "inverse FVG"), 4)
+        // entry triggers when price retests (wicks back into) that same zone.
+        const lastIdx = scan.length - 1;
+
+        function lastSweepIdx(getWick, level, above){
+          let found = -1;
+          for(let i = 0; i < scan.length; i++){
+            const w = getWick(scan[i]);
+            if(above ? w > level : w < level) found = i;
+          }
+          return found;
+        }
+        // Bullish FVG: candle[i-1].high < candle[i+1].low — forms during an up-leg.
+        function findBullishFVG(fromIdx){
+          for(let i = Math.max(1, fromIdx); i < scan.length - 1; i++){
+            const c1High = parseFloat(scan[i - 1][2]);
+            const c3Low = parseFloat(scan[i + 1][3]);
+            if(c3Low > c1High) return { gapLow: c1High, gapHigh: c3Low, idx: i + 1 };
+          }
+          return null;
+        }
+        // Bearish FVG: candle[i-1].low > candle[i+1].high — forms during a down-leg.
+        function findBearishFVG(fromIdx){
+          for(let i = Math.max(1, fromIdx); i < scan.length - 1; i++){
+            const c1Low = parseFloat(scan[i - 1][3]);
+            const c3High = parseFloat(scan[i + 1][2]);
+            if(c3High < c1Low) return { gapLow: c3High, gapHigh: c1Low, idx: i + 1 };
+          }
+          return null;
+        }
+
+        const sweepHighIdx = lastSweepIdx(c => parseFloat(c[2]), priorHigh, true);
+        if(sweepHighIdx >= 0){
+          const fvg = findBullishFVG(Math.max(0, sweepHighIdx - 2));
+          if(fvg){
+            let invalIdx = -1;
+            for(let k = fvg.idx + 1; k < scan.length; k++){
+              if(parseFloat(scan[k][4]) < fvg.gapLow){ invalIdx = k; break; } // closes back below the gap -> invalidated
+            }
+            if(invalIdx >= 0){
+              let retestIdx = -1;
+              for(let k = invalIdx + 1; k < scan.length; k++){
+                if(parseFloat(scan[k][2]) >= fvg.gapLow){ retestIdx = k; break; } // wicks back up into the zone
+              }
+              if(retestIdx === lastIdx){
+                side = 'sell';
+                sweepAnchor = fvg.gapHigh; // SL sits above the iFVG zone top
+                confirmIdx = retestIdx;
+              }
+            }
+          }
+        }
+        if(side === null){
+          const sweepLowIdx = lastSweepIdx(c => parseFloat(c[3]), priorLow, false);
+          if(sweepLowIdx >= 0){
+            const fvg = findBearishFVG(Math.max(0, sweepLowIdx - 2));
+            if(fvg){
+              let invalIdx = -1;
+              for(let k = fvg.idx + 1; k < scan.length; k++){
+                if(parseFloat(scan[k][4]) > fvg.gapHigh){ invalIdx = k; break; } // closes back above the gap -> invalidated
+              }
+              if(invalIdx >= 0){
+                let retestIdx = -1;
+                for(let k = invalIdx + 1; k < scan.length; k++){
+                  if(parseFloat(scan[k][3]) <= fvg.gapHigh){ retestIdx = k; break; } // wicks back down into the zone
+                }
+                if(retestIdx === lastIdx){
+                  side = 'buy';
+                  sweepAnchor = fvg.gapLow; // SL sits below the iFVG zone bottom
+                  confirmIdx = retestIdx;
+                }
+              }
+            }
+          }
+        }
+      } else if(entryMode === 'cisd'){
         // CISD (Change in State of Delivery): after a sweep, find the run of
         // same-direction candles that formed the leg INTO the sweep, take the
         // OPEN of the earliest candle in that run as the CISD level, then wait
@@ -1172,7 +1251,7 @@
           }
         }
       } else {
-        // legacy: sweep + close-back within the same candle (no CISD wait)
+        // legacy: sweep + close-back within the same candle (no wait for entry confirmation)
         const last = scan[scan.length - 1];
         const lastHigh = parseFloat(last[2]), lastLow = parseFloat(last[3]), lastClose = parseFloat(last[4]);
         if(lastHigh > priorHigh && lastClose < priorHigh){ side = 'sell'; sweepAnchor = lastHigh; confirmIdx = scan.length - 1; }
@@ -1210,12 +1289,9 @@
           if(side === 'buy' && out.funding < -settings.fundingThreshold) confluence++;
           if(side === 'sell' && out.funding > settings.fundingThreshold) confluence++;
         }
-        const h4Confirmed = settings.h4ConfirmEnabled
-          ? (out.h4Bias === null ? null : (out.h4Bias === side)) // null = H4'da hali aniq bias yo'q
-          : null;
-        if(h4Confirmed === true) confluence++;
+        if(useCrtRange) confluence++; // structural: this signal IS built on a real H4 CRT range
 
-        out.trade = { side, entry, sl, tp, target, riskPct, confluence, rr: settings.riskReward, cooldown: !!inCooldown, h4Confirmed, cisd: cisdOn };
+        out.trade = { side, entry, sl, tp, target, riskPct, confluence, rr: settings.riskReward, cooldown: !!inCooldown, crt: useCrtRange, entryMode };
       }
 
       // reuse klines for OI-divergence price reference (~60 min back at 15m => 4 candles)
@@ -1285,14 +1361,14 @@
           // duplicate/overlapping positions and rapid-fire re-signaling (whipsaw).
           const alreadyOpen = openTrades.some(ot => ot.symbol === r.symbol && ot.side === t.side);
           if(!t.cooldown && !alreadyOpen){
-            const h4Tag = t.h4Confirmed === true ? ' · H4 ✅ tasdiqlangan' : (t.h4Confirmed === false ? ' · H4 qarama-qarshi' : '');
-            const cisdTag = t.cisd ? ' · CISD tasdiqlangan' : '';
+            const h4Tag = t.crt ? ' · CRT (H4→M15)' : '';
+            const cisdTag = t.entryMode === 'ifvg' ? ' · iFVG retest tasdiqlangan' : (t.entryMode === 'cisd' ? ' · CISD tasdiqlangan' : '');
             cycleSignals.push({
               symbol: r.symbol, key,
               type: t.side === 'buy' ? 'long' : 'short',
               msg: (t.side === 'buy' ? 'BUY' : 'SELL') + ' signal — Entry ' + formatPrice(t.entry) +
                    ', SL ' + formatPrice(t.sl) + ', TP ' + formatPrice(t.tp) + cisdTag + h4Tag,
-              trade: { side: t.side, entry: t.entry, sl: t.sl, tp: t.tp, h4Confirmed: t.h4Confirmed }
+              trade: { side: t.side, entry: t.entry, sl: t.sl, tp: t.tp, crt: t.crt }
             });
           }
         }
@@ -1315,7 +1391,7 @@
         if(s.trade){
           tradeIdCounter++;
           const id = now.getTime() + '_' + tradeIdCounter;
-          Object.assign(histEntry, { id, side: s.trade.side, entry: s.trade.entry, sl: s.trade.sl, tp: s.trade.tp, h4Confirmed: s.trade.h4Confirmed, outcome: null, closePrice: null, closedTs: null });
+          Object.assign(histEntry, { id, side: s.trade.side, entry: s.trade.entry, sl: s.trade.sl, tp: s.trade.tp, crt: s.trade.crt, entryMode: s.trade.entryMode, outcome: null, closePrice: null, closedTs: null });
           openTrades.push({ id, symbol: s.symbol, side: s.trade.side, entry: s.trade.entry, sl: s.trade.sl, tp: s.trade.tp, ts: now.toISOString() });
         }
         signalHistory.unshift(histEntry);
@@ -1475,10 +1551,10 @@
     const fundingMatch = (t.side === 'buy' && r.funding !== null && r.funding < -settings.fundingThreshold) ||
                           (t.side === 'sell' && r.funding !== null && r.funding > settings.fundingThreshold);
     const tags = [];
-    if(t.cisd) tags.push('<span class="tc-conf tc-cisd">✓ CISD tasdiqlangan</span>');
+    if(t.entryMode === 'ifvg') tags.push('<span class="tc-conf tc-cisd">✓ iFVG retest</span>');
+    else if(t.entryMode === 'cisd') tags.push('<span class="tc-conf tc-cisd">✓ CISD</span>');
     if(fundingMatch) tags.push('<span class="tc-conf">✓ funding mos keladi</span>');
-    if(t.h4Confirmed === true) tags.push('<span class="tc-conf tc-h4">✓ H4 tasdiqlangan</span>');
-    else if(t.h4Confirmed === false) tags.push('<span class="tc-conf tc-h4-off">H4 qarama-qarshi</span>');
+    if(t.crt) tags.push('<span class="tc-conf tc-h4">✓ CRT (H4→M15)</span>');
     const tvUrl = tradingViewUrl(r.symbol);
     return '<a class="trade-card ' + t.side + '" href="' + tvUrl + '" target="_blank" rel="noopener" title="TradingView\'da ochish">' +
       '<div class="tc-head">' +
