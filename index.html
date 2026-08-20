@@ -83,6 +83,11 @@
   .dot.err{background:var(--short);box-shadow:0 0 6px var(--short);}
   .dot.loading{background:var(--gold);animation:blink 1s infinite;}
   @keyframes blink{50%{opacity:0.3;}}
+  #fgiBadge.fgi-extreme-fear{color:var(--short);border-color:var(--short);}
+  #fgiBadge.fgi-fear{color:var(--short);}
+  #fgiBadge.fgi-neutral{color:var(--gold);}
+  #fgiBadge.fgi-greed{color:var(--long);}
+  #fgiBadge.fgi-extreme-greed{color:var(--long);border-color:var(--long);}
 
   button.btn{
     font-family:var(--font-body);
@@ -475,6 +480,22 @@
     margin-bottom:12px;
   }
   .history-toolbar .hint{margin:0;font-size:11.5px;color:var(--text-faint);}
+  .stats-summary{
+    display:grid;
+    grid-template-columns:repeat(auto-fit, minmax(120px, 1fr));
+    gap:10px;
+    margin-bottom:16px;
+  }
+  .stats-summary .stat-box{
+    background:var(--panel-alt);
+    border:1px solid var(--border);
+    border-radius:8px;
+    padding:10px 12px;
+  }
+  .stats-summary .stat-box label{display:block;font-size:10px;color:var(--text-faint);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:4px;}
+  .stats-summary .stat-box span{font-family:var(--font-mono);font-size:17px;font-weight:700;color:var(--text);}
+  .stats-summary .stat-box span.pos{color:var(--long);}
+  .stats-summary .stat-box span.neg{color:var(--short);}
   .history-table-wrap{
     max-height:50vh;
     overflow-y:auto;
@@ -531,6 +552,7 @@
     <div class="status-cluster">
       <div class="status-pill"><span class="dot loading" id="connDot"></span><span id="connText">ulanmoqda...</span></div>
       <div class="status-pill" id="lastUpdated">— hali yangilanmagan</div>
+      <div class="status-pill" id="fgiBadge" style="display:none;"></div>
       <select id="refreshSelect">
         <option value="60000">1 daqiqa</option>
         <option value="300000" selected>5 daqiqa</option>
@@ -538,6 +560,7 @@
       </select>
       <button class="btn" id="refreshBtn">↻ Yangilash</button>
       <button class="btn" id="historyBtn">🕓 Tarix</button>
+      <button class="btn" id="statsBtn">📊 Statistika</button>
       <button class="btn" id="settingsBtn">⚙ Sozlamalar</button>
     </div>
   </div>
@@ -662,6 +685,29 @@
         </div>
       </div>
 
+      <div class="field-row">
+        <div class="field">
+          <label>Yopilgandan keyin kuzatish (soat)</label>
+          <input type="number" id="postCloseTrackHours" step="1" min="0" max="24" value="3">
+        </div>
+        <div class="field"></div>
+      </div>
+
+      <div class="field">
+        <label><input type="checkbox" id="fgiFilterEnabled" style="width:auto;margin-right:7px;vertical-align:middle;">Fear &amp; Greed Index filtri: ekstremal kayfiyatga qarshi signalni to'xtatish</label>
+        <div class="hint">Yoqilganda: Extreme Fear paytida SELL signallar, Extreme Greed paytida BUY signallar butunlay berilmaydi (chunki ular allaqachon ekstremal kayfiyatga qo'shilib ketardi). Manba: alternative.me Fear &amp; Greed Index, 1 soatda bir marta yangilanadi.</div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>Extreme Fear chegarasi (&le;)</label>
+          <input type="number" id="fgiExtremeFearThreshold" step="1" min="0" max="50" value="25">
+        </div>
+        <div class="field">
+          <label>Extreme Greed chegarasi (&ge;)</label>
+          <input type="number" id="fgiExtremeGreedThreshold" step="1" min="50" max="100" value="75">
+        </div>
+      </div>
+
       <div class="field">
         <label>Entry tasdiqlash rejimi</label>
         <select id="entryConfirmMode">
@@ -714,7 +760,7 @@
       </div>
       <div class="history-table-wrap">
         <table class="history-table">
-          <thead><tr><th>Vaqt</th><th>Coin</th><th>Turi</th><th>Tafsilot</th><th>Natija</th></tr></thead>
+          <thead><tr><th>Vaqt</th><th>Coin</th><th>Turi</th><th>Tafsilot</th><th>Natija</th><th>Keyingi harakat</th></tr></thead>
           <tbody id="historyBody"></tbody>
         </table>
       </div>
@@ -724,8 +770,25 @@
     </div>
   </div>
 
+  <div class="modal-overlay" id="statsModal">
+    <div class="modal modal-wide">
+      <h2>Statistika</h2>
+      <div id="statsSummary" class="stats-summary"></div>
+      <div class="history-table-wrap">
+        <table class="history-table">
+          <thead><tr><th>Turkum</th><th>Jami</th><th>✅ TP</th><th>❌ SL</th><th>G'alaba %</th><th>O'rtacha overshoot (TP)</th></tr></thead>
+          <tbody id="statsBody"></tbody>
+        </table>
+      </div>
+      <div class="modal-actions">
+        <button class="btn" id="closeStats">Yopish</button>
+      </div>
+    </div>
+  </div>
+
   <footer>
     Ma'lumot Binance Futures ochiq API'sidan olinadi, hech qanday hisob yoki API kalit talab qilinmaydi.
+    Fear &amp; Greed Index — <a href="https://alternative.me/crypto/fear-and-greed-index/" target="_blank" rel="noopener" style="color:inherit;">alternative.me</a> manbasidan.
     Sahifa faqat brauzeringizda ishlaydi — server yo'q, ma'lumot hech qayerga yuborilmaydi.
     Bu dashboard faqat signal ko'rsatadi, savdo tavsiyasi emas; risk-menejmentni o'zingiz belgilang.
   </footer>
@@ -747,6 +810,10 @@
     slBufferPct: 0.15,        // % beyond the sweep wick (floor — real buffer is max(this, ATR-based))
     atrMult: 0.5,             // SL buffer = max(slBufferPct, ATR * atrMult)
     cooldownMinutes: 30,      // min minutes before re-signaling same symbol+side after a TP/SL close
+    postCloseTrackHours: 3,   // how long to keep watching price after TP/SL to measure continuation ("overshoot")
+    fgiFilterEnabled: true,        // block signals that pile onto an already-extreme Fear & Greed reading
+    fgiExtremeFearThreshold: 25,   // F&G <= this -> Extreme Fear -> SELL signals suppressed
+    fgiExtremeGreedThreshold: 75,  // F&G >= this -> Extreme Greed -> BUY signals suppressed
     h4ConfirmEnabled: true,   // strict CRT mode: HTF range = single last-closed H4 candle (not a lookback window)
     entryConfirmMode: 'cisd',    // 'off' | 'cisd' | 'ifvg' — how entries are confirmed after a sweep
     cisdScanWindow: 8,        // recent candles searched for a sweep -> CISD confirmation pair
@@ -759,11 +826,13 @@
   const HISTORY_KEY = "liquidity_tape_history_v1";
   const OPEN_TRADES_KEY = "liquidity_tape_open_trades_v1";
   const COOLDOWN_KEY = "liquidity_tape_cooldowns_v1";
+  const POSTCLOSE_KEY = "liquidity_tape_postclose_v1";
   const HISTORY_MAX = 300;
   let settings = loadSettings();
   let signalHistory = loadHistory();
   let openTrades = loadOpenTrades(); // trades whose TP/SL hasn't hit yet: {id, symbol, side, entry, sl, tp, ts}
   let lastClosedAt = loadCooldowns(); // "SYMBOL_side" -> ms timestamp of last TP/SL close
+  let postCloseWatch = loadPostClose(); // trades being watched AFTER TP/SL for how far price kept running: {id, symbol, side, outcome, refLevel, targetDist, deadline}
   let refreshTimer = null;
   let sortState = { key: "symbol", dir: "asc" };
   let rows = {};          // symbol -> row data
@@ -826,6 +895,16 @@
   function saveCooldowns(){
     try{ localStorage.setItem(COOLDOWN_KEY, JSON.stringify(lastClosedAt)); }catch(e){}
   }
+  function loadPostClose(){
+    try{
+      const raw = localStorage.getItem(POSTCLOSE_KEY);
+      if(raw) return JSON.parse(raw);
+    }catch(e){}
+    return [];
+  }
+  function savePostClose(){
+    try{ localStorage.setItem(POSTCLOSE_KEY, JSON.stringify(postCloseWatch)); }catch(e){}
+  }
 
   // ---------- DOM refs ----------
   const connDot = document.getElementById('connDot');
@@ -845,6 +924,9 @@
   const historyModal = document.getElementById('historyModal');
   const closeHistory = document.getElementById('closeHistory');
   const clearHistoryBtn = document.getElementById('clearHistoryBtn');
+  const statsBtn = document.getElementById('statsBtn');
+  const statsModal = document.getElementById('statsModal');
+  const closeStats = document.getElementById('closeStats');
   const addCoinInput = document.getElementById('addCoinInput');
   const addCoinBtn = document.getElementById('addCoinBtn');
   const customCoinChips = document.getElementById('customCoinChips');
@@ -865,6 +947,10 @@
     document.getElementById('slBuffer').value = settings.slBufferPct;
     document.getElementById('atrMult').value = settings.atrMult;
     document.getElementById('cooldownMinutes').value = settings.cooldownMinutes;
+    document.getElementById('postCloseTrackHours').value = settings.postCloseTrackHours;
+    document.getElementById('fgiFilterEnabled').checked = !!settings.fgiFilterEnabled;
+    document.getElementById('fgiExtremeFearThreshold').value = settings.fgiExtremeFearThreshold;
+    document.getElementById('fgiExtremeGreedThreshold').value = settings.fgiExtremeGreedThreshold;
     document.getElementById('entryConfirmMode').value = settings.entryConfirmMode;
     document.getElementById('cisdScanWindow').value = settings.cisdScanWindow;
     document.getElementById('h4ConfirmEnabled').checked = !!settings.h4ConfirmEnabled;
@@ -891,6 +977,13 @@
     settings.atrMult = Math.max(0, isNaN(atrMultRaw) ? DEFAULTS.atrMult : atrMultRaw);
     const cooldownRaw = parseInt(document.getElementById('cooldownMinutes').value, 10);
     settings.cooldownMinutes = Math.max(0, isNaN(cooldownRaw) ? DEFAULTS.cooldownMinutes : cooldownRaw);
+    const postCloseRaw = parseFloat(document.getElementById('postCloseTrackHours').value);
+    settings.postCloseTrackHours = Math.max(0, isNaN(postCloseRaw) ? DEFAULTS.postCloseTrackHours : postCloseRaw);
+    settings.fgiFilterEnabled = document.getElementById('fgiFilterEnabled').checked;
+    const fearRaw = parseInt(document.getElementById('fgiExtremeFearThreshold').value, 10);
+    settings.fgiExtremeFearThreshold = clamp(isNaN(fearRaw) ? DEFAULTS.fgiExtremeFearThreshold : fearRaw, 0, 50);
+    const greedRaw = parseInt(document.getElementById('fgiExtremeGreedThreshold').value, 10);
+    settings.fgiExtremeGreedThreshold = clamp(isNaN(greedRaw) ? DEFAULTS.fgiExtremeGreedThreshold : greedRaw, 50, 100);
     settings.entryConfirmMode = document.getElementById('entryConfirmMode').value;
     settings.cisdScanWindow = clamp(parseInt(document.getElementById('cisdScanWindow').value,10) || DEFAULTS.cisdScanWindow, 3, 20);
     settings.h4ConfirmEnabled = document.getElementById('h4ConfirmEnabled').checked;
@@ -927,12 +1020,17 @@
   historyBtn.addEventListener('click', () => { renderHistory(); historyModal.classList.add('show'); });
   closeHistory.addEventListener('click', () => historyModal.classList.remove('show'));
   historyModal.addEventListener('click', (e) => { if(e.target === historyModal) historyModal.classList.remove('show'); });
+  statsBtn.addEventListener('click', () => { renderStats(); statsModal.classList.add('show'); });
+  closeStats.addEventListener('click', () => statsModal.classList.remove('show'));
+  statsModal.addEventListener('click', (e) => { if(e.target === statsModal) statsModal.classList.remove('show'); });
   clearHistoryBtn.addEventListener('click', () => {
     if(signalHistory.length && confirm("Butun signal tarixini o'chirishni tasdiqlaysizmi? (Faol kuzatilayotgan savdolar ham o'chadi)")){
       signalHistory = [];
       openTrades = [];
+      postCloseWatch = [];
       saveHistory();
       saveOpenTrades();
+      savePostClose();
       renderHistory();
     }
   });
@@ -992,6 +1090,53 @@
     const resp = await fetch(url.toString());
     if(!resp.ok) throw new Error("HTTP " + resp.status);
     return resp.json();
+  }
+
+  // Crypto Fear & Greed Index (alternative.me — free, public, CORS-enabled; updates
+  // once daily so we cache for an hour). Used as a market-sentiment gate: a signal
+  // whose direction would pile onto an already-extreme sentiment reading (SELL
+  // during Extreme Fear, BUY during Extreme Greed) is suppressed entirely.
+  let fearGreedIndex = null; // { value, classification, fetchedAt }
+  async function fetchFearGreedIndex(){
+    if(!settings.fgiFilterEnabled) return;
+    if(fearGreedIndex && (Date.now() - fearGreedIndex.fetchedAt) < 60 * 60000) return; // 1h cache
+    try{
+      const resp = await fetch('https://api.alternative.me/fng/?limit=1&format=json');
+      if(!resp.ok) return;
+      const data = await resp.json();
+      const item = data && data.data && data.data[0];
+      if(item && item.value !== undefined){
+        fearGreedIndex = {
+          value: parseInt(item.value, 10),
+          classification: item.value_classification || '',
+          fetchedAt: Date.now(),
+        };
+      }
+    }catch(e){
+      // fail open — if we can't fetch sentiment, don't block signals over it
+    }
+  }
+  function fgiBlocksSide(side){
+    if(!settings.fgiFilterEnabled || !fearGreedIndex) return false;
+    if(side === 'sell' && fearGreedIndex.value <= settings.fgiExtremeFearThreshold) return true;
+    if(side === 'buy' && fearGreedIndex.value >= settings.fgiExtremeGreedThreshold) return true;
+    return false;
+  }
+  function renderFgiBadge(){
+    const badge = document.getElementById('fgiBadge');
+    if(!settings.fgiFilterEnabled || !fearGreedIndex){ badge.style.display = 'none'; return; }
+    const v = fearGreedIndex.value;
+    let cls = 'fgi-neutral', label = fearGreedIndex.classification || 'Neutral';
+    if(v <= settings.fgiExtremeFearThreshold) cls = 'fgi-extreme-fear';
+    else if(v < 45) cls = 'fgi-fear';
+    else if(v < 55) cls = 'fgi-neutral';
+    else if(v < settings.fgiExtremeGreedThreshold) cls = 'fgi-greed';
+    else cls = 'fgi-extreme-greed';
+    badge.className = 'status-pill ' + cls;
+    badge.style.display = '';
+    badge.textContent = 'F&G: ' + v + ' (' + label + ')';
+    badge.title = (cls === 'fgi-extreme-fear') ? 'Extreme Fear — SELL signallar to\'xtatilgan' :
+                  (cls === 'fgi-extreme-greed') ? 'Extreme Greed — BUY signallar to\'xtatilgan' : '';
   }
 
   async function sendTelegramMessage(text, apiBaseOverride, chatIdOverride){
@@ -1258,6 +1403,10 @@
         else if(lastLow < priorLow && lastClose > priorLow){ side = 'buy'; sweepAnchor = lastLow; confirmIdx = scan.length - 1; }
       }
 
+      if(side && fgiBlocksSide(side)){
+        side = null; // sentiment would be piled onto an already-extreme reading — suppress
+      }
+
       if(side){
         out.sweep = side === 'sell' ? 'high' : 'low';
         out.sweepRank = 2;
@@ -1324,6 +1473,8 @@
     setConn('loading', 'yangilanmoqda...');
     hideBanner();
     try{
+      await fetchFearGreedIndex();
+      renderFgiBadge();
       const universe = await getSymbolUniverse(settings.topN, settings.customCoins);
       const priceMap = universe.priceMap;
       const symbols = universe.symbols;
@@ -1412,7 +1563,10 @@
         saveHistory();
         saveOpenTrades();
       }
-      if(historyModal.classList.contains('show') && (newOnes.length || tradesResolved)) renderHistory();
+      const postCloseUpdated = checkPostCloseWatch(newRows, now);
+      if(postCloseUpdated) saveHistory();
+      if(historyModal.classList.contains('show') && (newOnes.length || tradesResolved || postCloseUpdated)) renderHistory();
+      if(statsModal.classList.contains('show') && (tradesResolved || postCloseUpdated)) renderStats();
 
       renderTape();
       renderTradeSignals(activeTrades);
@@ -1492,6 +1646,14 @@
         const h = signalHistory.find(x => x.id === ot.id);
         if(h){ h.outcome = hit; h.closePrice = price; h.closedTs = now.toISOString(); }
         lastClosedAt[ot.symbol + '_' + ot.side] = now.getTime();
+        // keep watching price for a while after close — how far did it keep
+        // running past TP (momentum confirmation), or past SL (noise/slippage)?
+        const refLevel = hit === 'tp' ? ot.tp : ot.sl;
+        const targetDist = Math.abs(refLevel - ot.entry);
+        postCloseWatch.push({
+          id: ot.id, symbol: ot.symbol, side: ot.side, outcome: hit,
+          refLevel, targetDist, deadline: now.getTime() + settings.postCloseTrackHours * 3600000
+        });
         if(settings.tgEnabled){
           const base = ot.symbol.replace('USDT','');
           const label = hit === 'tp' ? '✅ TAKE PROFIT' : '🛑 STOP LOSS';
@@ -1502,8 +1664,42 @@
       }
     });
     openTrades = stillOpen;
-    if(resolved) saveCooldowns();
+    if(resolved){ saveCooldowns(); savePostClose(); }
     return resolved;
+  }
+
+  // Watches trades AFTER they've closed (TP or SL) for a configurable window,
+  // tracking the best continuation price reached beyond the level that closed
+  // them — this is the "overshoot" stat: for TP trades it shows momentum
+  // confirmation (did price keep running?), for SL trades it shows how much
+  // further past the stop the move went (noise vs. real reversal).
+  function checkPostCloseWatch(newRows, now){
+    if(postCloseWatch.length === 0) return false;
+    let updated = false;
+    const stillWatching = [];
+    postCloseWatch.forEach(pc => {
+      const r = newRows[pc.symbol];
+      const price = r && r.price != null ? r.price : null;
+      if(price != null && pc.targetDist > 0){
+        let extra;
+        if(pc.outcome === 'tp'){
+          extra = pc.side === 'buy' ? (price - pc.refLevel) : (pc.refLevel - price);
+        } else {
+          extra = pc.side === 'buy' ? (pc.refLevel - price) : (price - pc.refLevel);
+        }
+        const extraPct = (extra / pc.targetDist) * 100;
+        const h = signalHistory.find(x => x.id === pc.id);
+        if(h && (h.postCloseMaxPct === undefined || h.postCloseMaxPct === null || extraPct > h.postCloseMaxPct)){
+          h.postCloseMaxPct = extraPct;
+          updated = true;
+        }
+      }
+      if(now.getTime() < pc.deadline) stillWatching.push(pc);
+      else updated = true; // window finished — stop tracking, one last render/save
+    });
+    postCloseWatch = stillWatching;
+    if(updated) savePostClose();
+    return updated;
   }
 
   function renderHistory(){
@@ -1512,7 +1708,7 @@
     const openCount = openTrades.length;
     countEl.textContent = signalHistory.length + " ta yozuv" + (openCount ? " · " + openCount + " ta savdo faol" : "");
     if(signalHistory.length === 0){
-      body.innerHTML = '<tr><td colspan="5" class="history-empty">Tarix bo\'sh — signal paydo bo\'lganda shu yerga qo\'shiladi.</td></tr>';
+      body.innerHTML = '<tr><td colspan="6" class="history-empty">Tarix bo\'sh — signal paydo bo\'lganda shu yerga qo\'shiladi.</td></tr>';
       return;
     }
     body.innerHTML = signalHistory.map(h => {
@@ -1531,7 +1727,89 @@
       } else {
         resultHtml = '<span class="res-open">⏳ Faol</span>';
       }
-      return '<tr><td>' + time + '</td><td><a class="hist-sym" href="' + tradingViewUrl(h.symbol) + '" target="_blank" rel="noopener">' + base + '</a></td><td class="' + cls + '">' + label + '</td><td>' + escapeHtml(h.msg) + '</td><td>' + resultHtml + '</td></tr>';
+      let followHtml = '<span class="res-na">—</span>';
+      if(h.postCloseMaxPct !== undefined && h.postCloseMaxPct !== null){
+        const pct = h.postCloseMaxPct;
+        const cls2 = pct >= 0 ? 'res-tp' : 'res-sl';
+        const arrow = pct >= 0 ? '+' : '';
+        const label2 = h.outcome === 'tp' ? 'davom etdi' : 'oshib ketdi';
+        followHtml = '<span class="' + cls2 + '">' + arrow + pct.toFixed(0) + '% ' + label2 + '</span>';
+      }
+      return '<tr><td>' + time + '</td><td><a class="hist-sym" href="' + tradingViewUrl(h.symbol) + '" target="_blank" rel="noopener">' + base + '</a></td><td class="' + cls + '">' + label + '</td><td>' + escapeHtml(h.msg) + '</td><td>' + resultHtml + '</td><td>' + followHtml + '</td></tr>';
+    }).join('');
+  }
+
+  // ---------- Symbol classification (for the Statistika breakdown) ----------
+  const SYMBOL_CATEGORIES = {
+    // Yirik kripto (major)
+    BTC:'Yirik kripto', ETH:'Yirik kripto', SOL:'Yirik kripto', BNB:'Yirik kripto',
+    XRP:'Yirik kripto', ADA:'Yirik kripto', DOGE:'Yirik kripto', AVAX:'Yirik kripto',
+    LINK:'Yirik kripto', DOT:'Yirik kripto', MATIC:'Yirik kripto', LTC:'Yirik kripto',
+    BCH:'Yirik kripto', TRX:'Yirik kripto', ATOM:'Yirik kripto', ZEC:'Yirik kripto',
+    // Tovar (metall/energiya)
+    XAU:'Tovar (metall/energiya)', XAG:'Tovar (metall/energiya)', CL:'Tovar (metall/energiya)',
+    NG:'Tovar (metall/energiya)', HG:'Tovar (metall/energiya)',
+    // Leveraged ETF
+    SOXL:'Leveraged ETF', SOXS:'Leveraged ETF', TQQQ:'Leveraged ETF', SQQQ:'Leveraged ETF',
+    SPXL:'Leveraged ETF', SPXS:'Leveraged ETF', UPRO:'Leveraged ETF', SPXU:'Leveraged ETF',
+    TNA:'Leveraged ETF', TZA:'Leveraged ETF',
+    // bStock (tokenlashtirilgan aksiya)
+    SNDK:'bStock (aksiya)', MU:'bStock (aksiya)', SPCX:'bStock (aksiya)', SKHYNIX:'bStock (aksiya)',
+    SKHY:'bStock (aksiya)', NOKB:'bStock (aksiya)', AAPLB:'bStock (aksiya)', MUB:'bStock (aksiya)',
+    IBMB:'bStock (aksiya)', NVDA:'bStock (aksiya)', NVDAB:'bStock (aksiya)', G9B:'bStock (aksiya)',
+    N4B:'bStock (aksiya)',
+  };
+  function classifySymbol(symbol){
+    const base = symbol.replace('USDT','');
+    return SYMBOL_CATEGORIES[base] || 'Kichik/Alt kripto';
+  }
+
+  function renderStats(){
+    const closed = signalHistory.filter(h => h.id !== undefined && (h.outcome === 'tp' || h.outcome === 'sl'));
+    const summaryEl = document.getElementById('statsSummary');
+    const bodyEl = document.getElementById('statsBody');
+
+    const tpCount = closed.filter(h => h.outcome === 'tp').length;
+    const slCount = closed.filter(h => h.outcome === 'sl').length;
+    const total = closed.length;
+    const winPct = total ? (tpCount / total * 100) : 0;
+    const rr = settings.riskReward;
+    const expectancy = total ? (winPct/100 * rr - (1 - winPct/100)) : 0;
+
+    summaryEl.innerHTML = [
+      ['Jami yopilgan', total],
+      ['✅ TP', tpCount],
+      ['❌ SL', slCount],
+      ["G'alaba %", total ? winPct.toFixed(0) + '%' : '—', winPct >= 50 ? 'pos' : (total ? 'neg' : '')],
+      ['Expectancy (R)', total ? (expectancy >= 0 ? '+' : '') + expectancy.toFixed(2) + 'R' : '—', expectancy >= 0 ? 'pos' : (total ? 'neg' : '')],
+    ].map(([label, val, cls]) => '<div class="stat-box"><label>' + label + '</label><span class="' + (cls || '') + '">' + val + '</span></div>').join('');
+
+    if(total === 0){
+      bodyEl.innerHTML = '<tr><td colspan="6" class="history-empty">Hali yopilgan savdo yo\'q — TP yoki SL bo\'lgach shu yerda ko\'rinadi.</td></tr>';
+      return;
+    }
+
+    const byCategory = {};
+    closed.forEach(h => {
+      const cat = classifySymbol(h.symbol);
+      if(!byCategory[cat]) byCategory[cat] = { total:0, tp:0, sl:0, overshootSum:0, overshootCount:0 };
+      const c = byCategory[cat];
+      c.total++;
+      if(h.outcome === 'tp'){
+        c.tp++;
+        if(h.postCloseMaxPct !== undefined && h.postCloseMaxPct !== null){ c.overshootSum += h.postCloseMaxPct; c.overshootCount++; }
+      } else {
+        c.sl++;
+      }
+    });
+
+    const rows = Object.keys(byCategory).sort((a,b) => byCategory[b].total - byCategory[a].total);
+    bodyEl.innerHTML = rows.map(cat => {
+      const c = byCategory[cat];
+      const wp = c.total ? (c.tp / c.total * 100) : 0;
+      const avgOvershoot = c.overshootCount ? (c.overshootSum / c.overshootCount) : null;
+      const wpCls = wp >= 50 ? 'res-tp' : 'res-sl';
+      return '<tr><td>' + cat + '</td><td>' + c.total + '</td><td class="res-tp">' + c.tp + '</td><td class="res-sl">' + c.sl + '</td><td class="' + wpCls + '">' + wp.toFixed(0) + '%</td><td>' + (avgOvershoot !== null ? '+' + avgOvershoot.toFixed(0) + '%' : '—') + '</td></tr>';
     }).join('');
   }
 
