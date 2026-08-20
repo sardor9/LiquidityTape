@@ -25,6 +25,7 @@ If you find it useful and would like to support its development, you can make a 
 ### USDT (TRC20 / TRON)
 
 <img width="370" height="370" alt="qr_usdt_trc20" src="https://github.com/user-attachments/assets/9a9eaf8e-82cb-496c-a65f-883481ba31c0" />
+
 ```text
 TUyVWVNjksVfUUZAMEDvUrLoNQYbwrdJrx
 ```
