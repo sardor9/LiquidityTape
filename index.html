@@ -68,6 +68,14 @@
   }
 
   .status-cluster{display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+  .lang-toggle{display:flex;border:1px solid var(--border);border-radius:20px;overflow:hidden;}
+  .lang-toggle button{
+    font-family:var(--font-mono);font-size:11px;font-weight:700;
+    padding:6px 12px;border:none;background:var(--panel);color:var(--text-faint);
+    cursor:pointer;transition:background 0.15s,color 0.15s;
+  }
+  .lang-toggle button.active{background:var(--gold);color:#1A1204;}
+  .lang-toggle button:not(.active):hover{color:var(--text);}
   .status-pill{
     display:flex;align-items:center;gap:7px;
     font-family:var(--font-mono);
@@ -263,6 +271,7 @@
   .tc-tags{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;}
   .tc-h4{color:var(--long);background:rgba(52,211,153,0.12);}
   .tc-cisd{color:var(--diverg);background:rgba(96,165,250,0.12);}
+  .tc-adx{color:var(--gold);background:rgba(217,165,92,0.12);}
   .hist-sym{color:var(--text);text-decoration:none;font-weight:600;}
   .hist-sym:hover{color:var(--gold);text-decoration:underline;}
   .tc-h4-off{color:var(--text-faint);background:rgba(255,255,255,0.05);}
@@ -389,6 +398,9 @@
   .sym-cell{font-family:var(--font-body);font-weight:700;color:var(--text);}
   .sym-cell .base{font-weight:700;}
   .sym-cell .quote{color:var(--text-faint);font-weight:500;font-size:11px;}
+  .sym-link{color:inherit;text-decoration:none;cursor:pointer;}
+  .sym-link:hover{color:var(--gold);text-decoration:underline;}
+  .sym-link:hover .quote{color:inherit;}
   .num{text-align:right;font-variant-numeric:tabular-nums;}
   .up{color:var(--long);}
   .down{color:var(--short);}
@@ -550,18 +562,23 @@
       <span class="sub">BINANCE FUTURES · FUNDING / SWEEP / OI SIGNAL MONITOR</span>
     </div>
     <div class="status-cluster">
-      <div class="status-pill"><span class="dot loading" id="connDot"></span><span id="connText">ulanmoqda...</span></div>
-      <div class="status-pill" id="lastUpdated">— hali yangilanmagan</div>
+      <div class="status-pill"><span class="dot loading" id="connDot"></span><span id="connText" data-i18n="connLoadingText">ulanmoqda...</span></div>
+      <div class="status-pill" id="lastUpdated" data-i18n="lastUpdatedNever">— hali yangilanmagan</div>
       <div class="status-pill" id="fgiBadge" style="display:none;"></div>
       <select id="refreshSelect">
-        <option value="60000">1 daqiqa</option>
-        <option value="300000" selected>5 daqiqa</option>
-        <option value="900000">15 daqiqa</option>
+        <option value="60000" data-i18n="refresh1min">1 daqiqa</option>
+        <option value="300000" selected data-i18n="refresh5min">5 daqiqa</option>
+        <option value="900000" data-i18n="refresh15min">15 daqiqa</option>
       </select>
-      <button class="btn" id="refreshBtn">↻ Yangilash</button>
-      <button class="btn" id="historyBtn">🕓 Tarix</button>
-      <button class="btn" id="statsBtn">📊 Statistika</button>
-      <button class="btn" id="settingsBtn">⚙ Sozlamalar</button>
+      <button class="btn" id="refreshBtn" data-i18n="refreshBtn">↻ Yangilash</button>
+      <button class="btn" id="historyBtn" data-i18n="historyBtn">🕓 Tarix</button>
+      <button class="btn" id="statsBtn" data-i18n="statsBtn">📊 Statistika</button>
+      <button class="btn" id="debugBtn" data-i18n="debugBtn">🔍 Debug</button>
+      <button class="btn" id="settingsBtn" data-i18n="settingsBtn">⚙ Sozlamalar</button>
+      <div class="lang-toggle" id="langToggle">
+        <button type="button" data-lang="uz" class="active">UZ</button>
+        <button type="button" data-lang="en">EN</button>
+      </div>
     </div>
   </div>
 
@@ -569,34 +586,34 @@
 
   <div class="tape-wrap">
     <div class="tape-label">TAPE</div>
-    <div id="tapeContainer"><div class="tape-empty">Signallar kutilmoqda — birinchi tsikl tugagach shu yerda ko'rinadi.</div></div>
+    <div id="tapeContainer"><div class="tape-empty" data-i18n="tapeWaiting">Signallar kutilmoqda — birinchi tsikl tugagach shu yerda ko'rinadi.</div></div>
   </div>
 
   <div class="trade-signals-wrap">
-    <div class="section-title">SAVDO SIGNALLARI <span class="section-sub">— Entry / Stop Loss / Take Profit, liquidity sweep asosida</span></div>
+    <div class="section-title"><span data-i18n="sectionTradeSignals">SAVDO SIGNALLARI</span> <span class="section-sub" data-i18n="sectionTradeSignalsSub">— Entry / Stop Loss / Take Profit, liquidity sweep asosida</span></div>
     <div id="tradeSignals" class="trade-grid">
-      <div class="trade-empty">Hozircha faol signal yo'q — sweep aniqlanganda shu yerda Entry/SL/TP bilan ko'rinadi.</div>
+      <div class="trade-empty" data-i18n="tradeEmpty">Hozircha faol signal yo'q — sweep aniqlanganda shu yerda Entry/SL/TP bilan ko'rinadi.</div>
     </div>
   </div>
 
   <div class="custom-coins-panel">
-    <div class="ccp-label">Qo'shimcha kuzatiladigan coinlar</div>
+    <div class="ccp-label" data-i18n="ccpLabel">Qo'shimcha kuzatiladigan coinlar</div>
     <div class="ccp-row">
-      <input type="text" id="addCoinInput" class="search" placeholder="masalan: PEPE" style="width:160px">
-      <button class="btn" id="addCoinBtn">+ Qo'shish</button>
+      <input type="text" id="addCoinInput" class="search" placeholder="masalan: PEPE" data-i18n-placeholder="addCoinPlaceholder" style="width:160px">
+      <button class="btn" id="addCoinBtn" data-i18n="addCoinBtn">+ Qo'shish</button>
     </div>
     <div id="customCoinChips" class="chip-list"></div>
   </div>
 
   <div class="controls">
     <div class="left">
-      <input type="text" class="search" id="searchInput" placeholder="Coin qidirish...">
+      <input type="text" class="search" id="searchInput" placeholder="Coin qidirish..." data-i18n-placeholder="searchPlaceholder">
       <div class="legend">
-        <span><i style="background:var(--short)"></i> Funding: dump xavfi</span>
-        <span><i style="background:var(--long)"></i> Funding: pump xavfi</span>
-        <span><i style="background:var(--long)"></i> BUY signal (sweep)</span>
-        <span><i style="background:var(--short)"></i> SELL signal (sweep)</span>
-        <span><i style="background:var(--diverg)"></i> OI divergensiya</span>
+        <span><i style="background:var(--short)"></i> <span data-i18n="legendFundingDump">Funding: dump xavfi</span></span>
+        <span><i style="background:var(--long)"></i> <span data-i18n="legendFundingPump">Funding: pump xavfi</span></span>
+        <span><i style="background:var(--long)"></i> <span data-i18n="legendBuySweep">BUY signal (sweep)</span></span>
+        <span><i style="background:var(--short)"></i> <span data-i18n="legendSellSweep">SELL signal (sweep)</span></span>
+        <span><i style="background:var(--diverg)"></i> <span data-i18n="legendOiDiverg">OI divergensiya</span></span>
       </div>
     </div>
   </div>
@@ -606,196 +623,434 @@
     <table>
       <thead>
         <tr>
-          <th data-key="symbol">Coin</th>
-          <th data-key="price" class="num">Narx</th>
-          <th data-key="change24h" class="num">24s %</th>
-          <th data-key="funding" class="num">Funding</th>
-          <th data-key="sweepRank">Signal</th>
-          <th data-key="divergRank">OI / Narx</th>
+          <th data-key="symbol" data-i18n="thCoin">Coin</th>
+          <th data-key="price" class="num" data-i18n="thPrice">Narx</th>
+          <th data-key="change24h" class="num" data-i18n="th24h">24s %</th>
+          <th data-key="funding" class="num" data-i18n="thFunding">Funding</th>
+          <th data-key="adxValue" class="num" data-i18n="thAdx">ADX</th>
+          <th data-key="sweepRank" data-i18n="thSignal">Signal</th>
+          <th data-key="divergRank" data-i18n="thOiPrice">OI / Narx</th>
         </tr>
       </thead>
       <tbody id="tableBody">
-        <tr><td colspan="6" class="empty-state">Ma'lumot yuklanmoqda...</td></tr>
+        <tr><td colspan="7" class="empty-state" data-i18n="tableLoading">Ma'lumot yuklanmoqda...</td></tr>
       </tbody>
     </table>
   </div>
 
   <div class="modal-overlay" id="settingsModal">
     <div class="modal">
-      <h2>Sozlamalar</h2>
+      <h2 data-i18n="settingsTitle">Sozlamalar</h2>
 
       <div class="field">
-        <label>API manzili (CORS xatosi bo'lsa proxy yozing)</label>
+        <label data-i18n="apiBaseLabel">API manzili (CORS xatosi bo'lsa proxy yozing)</label>
         <input type="text" id="apiBase" value="https://fapi.binance.com">
-        <div class="hint">Brauzer to'g'ridan-to'g'ri Binance'ga ulana olmasa (CORS), README'dagi Cloudflare Worker proxy manzilini shu yerga yozing.</div>
+        <div class="hint" data-i18n="apiBaseHint">Brauzer to'g'ridan-to'g'ri Binance'ga ulana olmasa (CORS), README'dagi Cloudflare Worker proxy manzilini shu yerga yozing.</div>
       </div>
 
       <div class="field-row">
         <div class="field">
-          <label>Top nechta coin</label>
+          <label data-i18n="topNLabel">Top nechta coin</label>
           <input type="number" id="topN" min="10" max="20" value="15">
         </div>
         <div class="field">
-          <label>Funding chegarasi (%)</label>
+          <label data-i18n="fundingThresholdLabel">Funding chegarasi (%)</label>
           <input type="number" id="fundingThreshold" step="0.001" value="0.05">
         </div>
       </div>
 
       <div class="field-row">
         <div class="field">
-          <label>Sweep lookback (sham soni)</label>
+          <label data-i18n="sweepLookbackLabel">Sweep lookback (sham soni)</label>
           <input type="number" id="sweepLookback" min="5" max="50" value="20">
         </div>
         <div class="field">
-          <label>Sweep interval</label>
+          <label data-i18n="sweepIntervalLabel">Sweep interval</label>
           <input type="text" id="sweepInterval" value="15m">
         </div>
       </div>
 
       <div class="field-row">
         <div class="field">
-          <label>OI narx chegarasi (%)</label>
+          <label data-i18n="oiPriceThresholdLabel">OI narx chegarasi (%)</label>
           <input type="number" id="oiPriceThreshold" step="0.1" value="2">
         </div>
         <div class="field">
-          <label>OI o'zgarish chegarasi (%)</label>
+          <label data-i18n="oiThresholdLabel">OI o'zgarish chegarasi (%)</label>
           <input type="number" id="oiThreshold" step="0.1" value="3">
         </div>
       </div>
 
       <div class="field-row">
         <div class="field">
-          <label>Risk:Reward (TP nisbati)</label>
+          <label data-i18n="riskRewardLabel">Risk:Reward (TP nisbati)</label>
           <input type="number" id="riskReward" step="0.5" min="1" value="2">
         </div>
         <div class="field">
-          <label>SL bufer (%, wick'dan tashqarida)</label>
+          <label data-i18n="slBufferLabel">SL bufer (%, wick'dan tashqarida)</label>
           <input type="number" id="slBuffer" step="0.05" min="0" value="0.15">
         </div>
       </div>
 
       <div class="field-row">
         <div class="field">
-          <label>ATR ko'paytiruvchi (SL, volatillikka moslashadi)</label>
+          <label data-i18n="atrMultLabel">ATR ko'paytiruvchi (SL, volatillikka moslashadi)</label>
           <input type="number" id="atrMult" step="0.1" min="0" value="0.5">
         </div>
         <div class="field">
-          <label>Cooldown (daqiqa, TP/SL'dan keyin)</label>
+          <label data-i18n="cooldownLabel">Cooldown (daqiqa, TP/SL'dan keyin)</label>
           <input type="number" id="cooldownMinutes" step="5" min="0" value="30">
         </div>
       </div>
 
       <div class="field-row">
         <div class="field">
-          <label>Yopilgandan keyin kuzatish (soat)</label>
+          <label data-i18n="postCloseLabel">Yopilgandan keyin kuzatish (soat)</label>
           <input type="number" id="postCloseTrackHours" step="1" min="0" max="24" value="3">
         </div>
         <div class="field"></div>
       </div>
 
       <div class="field">
-        <label><input type="checkbox" id="fgiFilterEnabled" style="width:auto;margin-right:7px;vertical-align:middle;">Fear &amp; Greed Index filtri: ekstremal kayfiyatga qarshi signalni to'xtatish</label>
-        <div class="hint">Yoqilganda: Extreme Fear paytida SELL signallar, Extreme Greed paytida BUY signallar butunlay berilmaydi (chunki ular allaqachon ekstremal kayfiyatga qo'shilib ketardi). Manba: alternative.me Fear &amp; Greed Index, 1 soatda bir marta yangilanadi.</div>
+        <label><input type="checkbox" id="fgiFilterEnabled" style="width:auto;margin-right:7px;vertical-align:middle;"><span data-i18n="fgiFilterLabel">Fear &amp; Greed Index filtri: ekstremal kayfiyatga qarshi signalni to'xtatish</span></label>
+        <div class="hint" data-i18n="fgiFilterHint">Yoqilganda: Extreme Fear paytida SELL signallar, Extreme Greed paytida BUY signallar butunlay berilmaydi (chunki ular allaqachon ekstremal kayfiyatga qo'shilib ketardi). Manba: alternative.me Fear &amp; Greed Index, 1 soatda bir marta yangilanadi.</div>
       </div>
       <div class="field-row">
         <div class="field">
-          <label>Extreme Fear chegarasi (&le;)</label>
+          <label data-i18n="fgiFearLabel">Extreme Fear chegarasi (&le;)</label>
           <input type="number" id="fgiExtremeFearThreshold" step="1" min="0" max="50" value="25">
         </div>
         <div class="field">
-          <label>Extreme Greed chegarasi (&ge;)</label>
+          <label data-i18n="fgiGreedLabel">Extreme Greed chegarasi (&ge;)</label>
           <input type="number" id="fgiExtremeGreedThreshold" step="1" min="50" max="100" value="75">
         </div>
       </div>
 
       <div class="field">
-        <label>Entry tasdiqlash rejimi</label>
-        <select id="entryConfirmMode">
-          <option value="off">Yo'q — sweep + close-back (darhol, eng ko'p signal)</option>
-          <option value="cisd">CISD — structure break (birinchi toza LTF signal)</option>
-          <option value="ifvg">iFVG retest — FVG invalidatsiya + qayta test (eng aniq, kamroq signal)</option>
-        </select>
-        <div class="hint">"Yo'q": sweep bo'lgan zahoti signal. "CISD": sweep'dan oldingi legning boshlang'ich ochilish narxi sinib yopilgach signal (LTF Signatures slaydiga ko'ra — odatda shu yetarli). "iFVG retest": sweep leg'ida FVG hosil bo'lib, keyin invalidatsiya qilinib, narx o'sha zonani qayta test qilgandagina signal — eng qattiq filtr, sezilarli kamroq signal beradi.</div>
+        <label><input type="checkbox" id="adxFilterEnabled" style="width:auto;margin-right:7px;vertical-align:middle;"><span data-i18n="adxFilterLabel">ADX trend-filtri: kuchli trendga qarshi CRT signalni to'xtatish</span></label>
+        <div class="hint" data-i18n="adxFilterHint">Yoqilganda: Signal timeframe'da (Wilder ADX 14) trend kuchi chegaradan yuqori bo'lsa VA CRT signal shu trendga qarshi (masalan kuchli ko'tarilishda SELL) bo'lsa — signal butunlay berilmaydi. Trend bilan bir xil yo'nalishdagi signallar cheklanmaydi, aksincha qo'shimcha tasdiq sifatida belgilanadi.</div>
       </div>
       <div class="field-row">
         <div class="field">
-          <label>Entry qidirish oynasi (sham soni)</label>
+          <label data-i18n="adxThresholdLabel">ADX chegarasi (kuchli trend)</label>
+          <input type="number" id="adxThreshold" step="1" min="10" max="50" value="20">
+        </div>
+        <div class="field"></div>
+      </div>
+
+      <div class="field">
+        <label data-i18n="entryModeLabel">Entry tasdiqlash rejimi</label>
+        <select id="entryConfirmMode">
+          <option value="off" data-i18n="entryModeOffOpt">Yo'q — sweep + close-back (darhol, eng ko'p signal)</option>
+          <option value="cisd" data-i18n="entryModeCisdOpt">CISD — structure break (birinchi toza LTF signal)</option>
+          <option value="ifvg" data-i18n="entryModeIfvgOpt">iFVG retest — FVG invalidatsiya + qayta test (eng aniq, kamroq signal)</option>
+        </select>
+        <div class="hint" data-i18n="entryModeHint">"Yo'q": sweep bo'lgan zahoti signal. "CISD": sweep'dan oldingi legning boshlang'ich ochilish narxi sinib yopilgach signal (LTF Signatures slaydiga ko'ra — odatda shu yetarli). "iFVG retest": sweep leg'ida FVG hosil bo'lib, keyin invalidatsiya qilinib, narx o'sha zonani qayta test qilgandagina signal — eng qattiq filtr, sezilarli kamroq signal beradi.</div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label data-i18n="cisdScanWindowLabel">Entry qidirish oynasi (sham soni)</label>
           <input type="number" id="cisdScanWindow" step="1" min="3" max="20" value="8">
         </div>
         <div class="field"></div>
       </div>
 
       <div class="field">
-        <label><input type="checkbox" id="h4ConfirmEnabled" style="width:auto;margin-right:7px;vertical-align:middle;">CRT rejimi: H4 (oldingi yopilgan sham) diapazonini asos qilib olish</label>
-        <div class="hint">Yoqilganda: CRTH/CRTL = oldingi to'liq yopilgan H4 shamning eng yuqori/past nuqtasi (Candle 1). Sweep + Entry tasdiqlash shu daraja atrofida, sizning Sweep interval'ingizda (masalan 15m) qidiriladi — "4 hour CRT &gt; 15M TSQ" modeliga mos. O'chirilsa, eski usul — M15'ning o'z rolling lookback diapazoni ishlatiladi.</div>
+        <label><input type="checkbox" id="h4ConfirmEnabled" style="width:auto;margin-right:7px;vertical-align:middle;"><span data-i18n="h4ConfirmLabel">CRT rejimi: H4 (oldingi yopilgan sham) diapazonini asos qilib olish</span></label>
+        <div class="hint" data-i18n="h4ConfirmHint">Yoqilganda: CRTH/CRTL = oldingi to'liq yopilgan H4 shamning eng yuqori/past nuqtasi (Candle 1). Sweep + Entry tasdiqlash shu daraja atrofida, sizning Sweep interval'ingizda (masalan 15m) qidiriladi — "4 hour CRT &gt; 15M TSQ" modeliga mos. O'chirilsa, eski usul — M15'ning o'z rolling lookback diapazoni ishlatiladi.</div>
       </div>
 
       <div class="field">
-        <label><input type="checkbox" id="tgEnabled" style="width:auto;margin-right:7px;vertical-align:middle;">Telegram'ga signal yuborish</label>
-        <div class="hint">Bot tokenni bu yerga yozmang — u faqat Cloudflare Worker'da (Settings &rarr; Variables and Secrets &rarr; TELEGRAM_BOT_TOKEN) saqlanadi. Bu yoqilishi uchun "API manzili" maydonida o'zingizning Worker manzilingiz turishi kerak (proxy-worker.js).</div>
+        <label><input type="checkbox" id="tgEnabled" style="width:auto;margin-right:7px;vertical-align:middle;"><span data-i18n="tgEnabledLabel">Telegram'ga signal yuborish</span></label>
+        <div class="hint" data-i18n="tgHint">Bot tokenni bu yerga yozmang — u faqat Cloudflare Worker'da (Settings &rarr; Variables and Secrets &rarr; TELEGRAM_BOT_TOKEN) saqlanadi. Bu yoqilishi uchun "API manzili" maydonida o'zingizning Worker manzilingiz turishi kerak (proxy-worker.js).</div>
       </div>
       <div class="field-row">
         <div class="field">
-          <label>Telegram Chat ID</label>
-          <input type="text" id="tgChatId" placeholder="masalan: 123456789">
+          <label data-i18n="tgChatIdLabel">Telegram Chat ID</label>
+          <input type="text" id="tgChatId" placeholder="masalan: 123456789" data-i18n-placeholder="tgChatIdPlaceholder">
         </div>
         <div class="field" style="display:flex;align-items:flex-end;">
-          <button class="btn" id="tgTestBtn" type="button" style="width:100%;">Sinov xabari yuborish</button>
+          <button class="btn" id="tgTestBtn" type="button" style="width:100%;" data-i18n="tgTestBtn">Sinov xabari yuborish</button>
         </div>
       </div>
 
       <div class="modal-actions">
-        <button class="btn" id="closeSettings">Bekor qilish</button>
-        <button class="btn btn-primary" id="saveSettings">Saqlash va yangilash</button>
+        <button class="btn" id="closeSettings" data-i18n="cancelBtn">Bekor qilish</button>
+        <button class="btn btn-primary" id="saveSettings" data-i18n="saveBtn">Saqlash va yangilash</button>
       </div>
     </div>
   </div>
 
   <div class="modal-overlay" id="historyModal">
     <div class="modal modal-wide">
-      <h2>Signallar tarixi</h2>
+      <h2 data-i18n="historyTitle">Signallar tarixi</h2>
       <div class="history-toolbar">
         <span id="historyCount" class="hint"></span>
-        <button class="btn" id="clearHistoryBtn">Tozalash</button>
+        <button class="btn" id="clearHistoryBtn" data-i18n="historyClear">Tozalash</button>
       </div>
       <div class="history-table-wrap">
         <table class="history-table">
-          <thead><tr><th>Vaqt</th><th>Coin</th><th>Turi</th><th>Tafsilot</th><th>Natija</th><th>Keyingi harakat</th></tr></thead>
+          <thead><tr><th data-i18n="thTime">Vaqt</th><th data-i18n="thCoin">Coin</th><th data-i18n="thType">Turi</th><th data-i18n="thDetail">Tafsilot</th><th data-i18n="thResult">Natija</th><th data-i18n="thNextMove">Keyingi harakat</th></tr></thead>
           <tbody id="historyBody"></tbody>
         </table>
       </div>
       <div class="modal-actions">
-        <button class="btn" id="closeHistory">Yopish</button>
+        <button class="btn" id="closeHistory" data-i18n="closeBtn">Yopish</button>
       </div>
     </div>
   </div>
 
   <div class="modal-overlay" id="statsModal">
     <div class="modal modal-wide">
-      <h2>Statistika</h2>
+      <h2 data-i18n="statsTitle">Statistika</h2>
       <div id="statsSummary" class="stats-summary"></div>
       <div class="history-table-wrap">
         <table class="history-table">
-          <thead><tr><th>Turkum</th><th>Jami</th><th>✅ TP</th><th>❌ SL</th><th>G'alaba %</th><th>O'rtacha overshoot (TP)</th></tr></thead>
+          <thead><tr><th data-i18n="thCategory">Turkum</th><th data-i18n="thTotal">Jami</th><th>✅ TP</th><th>❌ SL</th><th data-i18n="thWinPct">G'alaba %</th><th data-i18n="thAvgOvershoot">O'rtacha overshoot (TP)</th></tr></thead>
           <tbody id="statsBody"></tbody>
         </table>
       </div>
       <div class="modal-actions">
-        <button class="btn" id="closeStats">Yopish</button>
+        <button class="btn" id="closeStats" data-i18n="closeBtn">Yopish</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="debugModal">
+    <div class="modal modal-wide">
+      <h2 data-i18n="debugTitle">Debug — nega signal yo'q?</h2>
+      <div class="hint" style="margin-bottom:12px;" data-i18n="debugHint">Har bir kuzatilayotgan coin uchun joriy siklda qaysi bosqichda turgani — signalning to'liq chiqishini kutmasdan, real vaqtda tekshirish uchun.</div>
+      <div class="history-table-wrap">
+        <table class="history-table">
+          <thead><tr><th data-i18n="thCoin">Coin</th><th data-i18n="thStatus">Holat</th><th data-i18n="thAdx">ADX</th></tr></thead>
+          <tbody id="debugBody"></tbody>
+        </table>
+      </div>
+      <div class="modal-actions">
+        <button class="btn" id="closeDebug" data-i18n="closeBtn">Yopish</button>
       </div>
     </div>
   </div>
 
   <footer>
-    Ma'lumot Binance Futures ochiq API'sidan olinadi, hech qanday hisob yoki API kalit talab qilinmaydi.
-    Fear &amp; Greed Index — <a href="https://alternative.me/crypto/fear-and-greed-index/" target="_blank" rel="noopener" style="color:inherit;">alternative.me</a> manbasidan.
-    Sahifa faqat brauzeringizda ishlaydi — server yo'q, ma'lumot hech qayerga yuborilmaydi.
-    Bu dashboard faqat signal ko'rsatadi, savdo tavsiyasi emas; risk-menejmentni o'zingiz belgilang.
+    <span data-i18n="footerLine1">Ma'lumot Binance Futures ochiq API'sidan olinadi, hech qanday hisob yoki API kalit talab qilinmaydi.</span>
+    <span data-i18n="footerFgiPrefix">Fear &amp; Greed Index —</span> <a href="https://alternative.me/crypto/fear-and-greed-index/" target="_blank" rel="noopener" style="color:inherit;">alternative.me</a> <span data-i18n="footerFgiSuffix">manbasidan.</span>
+    <span data-i18n="footerLine2">Sahifa faqat brauzeringizda ishlaydi — server yo'q, ma'lumot hech qayerga yuborilmaydi.</span>
+    <span data-i18n="footerLine3">Bu dashboard faqat signal ko'rsatadi, savdo tavsiyasi emas; risk-menejmentni o'zingiz belgilang.</span>
   </footer>
 
 <script>
 (function(){
   "use strict";
+
+  // ---------- i18n ----------
+  const I18N = {
+    tapeWaiting: {uz:"Signallar kutilmoqda — birinchi tsikl tugagach shu yerda ko'rinadi.", en:"Waiting for signals — they'll appear here after the first cycle finishes."},
+    sectionTradeSignals: {uz:"SAVDO SIGNALLARI", en:"TRADE SIGNALS"},
+    sectionTradeSignalsSub: {uz:"— Entry / Stop Loss / Take Profit, liquidity sweep asosida", en:"— Entry / Stop Loss / Take Profit, based on liquidity sweeps"},
+    tradeEmpty: {uz:"Hozircha faol signal yo'q — sweep aniqlanganda shu yerda Entry/SL/TP bilan ko'rinadi.", en:"No active signals yet — they'll show up here with Entry/SL/TP once a sweep is detected."},
+    ccpLabel: {uz:"Qo'shimcha kuzatiladigan coinlar", en:"Additional watched coins"},
+    addCoinPlaceholder: {uz:"masalan: PEPE", en:"e.g. PEPE"},
+    addCoinBtn: {uz:"+ Qo'shish", en:"+ Add"},
+    chipEmpty: {uz:"Hali qo'shilmagan — yuqoriga coin nomini yozib \"+ Qo'shish\" bosing.", en:"None added yet — type a coin name above and click \"+ Add\"."},
+    searchPlaceholder: {uz:"Coin qidirish...", en:"Search coins..."},
+    legendFundingDump: {uz:"Funding: dump xavfi", en:"Funding: dump risk"},
+    legendFundingPump: {uz:"Funding: pump xavfi", en:"Funding: pump risk"},
+    legendBuySweep: {uz:"BUY signal (sweep)", en:"BUY signal (sweep)"},
+    legendSellSweep: {uz:"SELL signal (sweep)", en:"SELL signal (sweep)"},
+    legendOiDiverg: {uz:"OI divergensiya", en:"OI divergence"},
+    thCoin: {uz:"Coin", en:"Coin"},
+    thPrice: {uz:"Narx", en:"Price"},
+    th24h: {uz:"24s %", en:"24h %"},
+    thFunding: {uz:"Funding", en:"Funding"},
+    thAdx: {uz:"ADX", en:"ADX"},
+    thSignal: {uz:"Signal", en:"Signal"},
+    thOiPrice: {uz:"OI / Narx", en:"OI / Price"},
+    tableLoading: {uz:"Ma'lumot yuklanmoqda...", en:"Loading data..."},
+    tableNoResults: {uz:"Natija topilmadi.", en:"No results found."},
+    settingsTitle: {uz:"Sozlamalar", en:"Settings"},
+    apiBaseLabel: {uz:"API manzili (CORS xatosi bo'lsa proxy yozing)", en:"API address (enter a proxy if you hit a CORS error)"},
+    apiBaseHint: {uz:"Brauzer to'g'ridan-to'g'ri Binance'ga ulana olmasa (CORS), README'dagi Cloudflare Worker proxy manzilini shu yerga yozing.", en:"If your browser can't connect to Binance directly (CORS), enter the Cloudflare Worker proxy address from the README here."},
+    topNLabel: {uz:"Top nechta coin", en:"Top N coins"},
+    fundingThresholdLabel: {uz:"Funding chegarasi (%)", en:"Funding threshold (%)"},
+    sweepLookbackLabel: {uz:"Sweep lookback (sham soni)", en:"Sweep lookback (candles)"},
+    sweepIntervalLabel: {uz:"Sweep interval", en:"Sweep interval"},
+    oiPriceThresholdLabel: {uz:"OI narx chegarasi (%)", en:"OI price threshold (%)"},
+    oiThresholdLabel: {uz:"OI o'zgarish chegarasi (%)", en:"OI change threshold (%)"},
+    riskRewardLabel: {uz:"Risk:Reward (TP nisbati)", en:"Risk:Reward (TP ratio)"},
+    slBufferLabel: {uz:"SL bufer (%, wick'dan tashqarida)", en:"SL buffer (%, beyond the wick)"},
+    atrMultLabel: {uz:"ATR ko'paytiruvchi (SL, volatillikka moslashadi)", en:"ATR multiplier (SL, adapts to volatility)"},
+    cooldownLabel: {uz:"Cooldown (daqiqa, TP/SL'dan keyin)", en:"Cooldown (minutes, after TP/SL)"},
+    postCloseLabel: {uz:"Yopilgandan keyin kuzatish (soat)", en:"Track after close (hours)"},
+    fgiFilterLabel: {uz:"Fear & Greed Index filtri: ekstremal kayfiyatga qarshi signalni to'xtatish", en:"Fear & Greed Index filter: block signals against extreme sentiment"},
+    fgiFilterHint: {uz:"Yoqilganda: Extreme Fear paytida SELL signallar, Extreme Greed paytida BUY signallar butunlay berilmaydi (chunki ular allaqachon ekstremal kayfiyatga qo'shilib ketardi). Manba: alternative.me Fear & Greed Index, 1 soatda bir marta yangilanadi.", en:"When on: SELL signals during Extreme Fear and BUY signals during Extreme Greed are suppressed entirely (since they'd be piling onto an already-extreme reading). Source: alternative.me Fear & Greed Index, updates once an hour."},
+    fgiFearLabel: {uz:"Extreme Fear chegarasi (≤)", en:"Extreme Fear threshold (≤)"},
+    fgiGreedLabel: {uz:"Extreme Greed chegarasi (≥)", en:"Extreme Greed threshold (≥)"},
+    adxFilterLabel: {uz:"ADX trend-filtri: kuchli trendga qarshi CRT signalni to'xtatish", en:"ADX trend filter: block CRT signals against a strong trend"},
+    adxFilterHint: {uz:"Yoqilganda: Signal timeframe'da (Wilder ADX 14) trend kuchi chegaradan yuqori bo'lsa VA CRT signal shu trendga qarshi (masalan kuchli ko'tarilishda SELL) bo'lsa — signal butunlay berilmaydi. Trend bilan bir xil yo'nalishdagi signallar cheklanmaydi, aksincha qo'shimcha tasdiq sifatida belgilanadi.", en:"When on: if trend strength (Wilder ADX 14, on the signal timeframe) is above the threshold AND the CRT signal opposes that trend (e.g. SELL during a strong rally) — the signal is suppressed entirely. Signals aligned with the trend aren't restricted, and are marked as extra-confirmed instead."},
+    adxThresholdLabel: {uz:"ADX chegarasi (kuchli trend)", en:"ADX threshold (strong trend)"},
+    entryModeLabel: {uz:"Entry tasdiqlash rejimi", en:"Entry confirmation mode"},
+    entryModeOffOpt: {uz:"Yo'q — sweep + close-back (darhol, eng ko'p signal)", en:"None — sweep + close-back (instant, most signals)"},
+    entryModeCisdOpt: {uz:"CISD — structure break (birinchi toza LTF signal)", en:"CISD — structure break (first clean LTF signal)"},
+    entryModeIfvgOpt: {uz:"iFVG retest — FVG invalidatsiya + qayta test (eng aniq, kamroq signal)", en:"iFVG retest — FVG invalidation + retest (most precise, fewer signals)"},
+    entryModeHint: {uz:"\"Yo'q\": sweep bo'lgan zahoti signal. \"CISD\": sweep'dan oldingi legning boshlang'ich ochilish narxi sinib yopilgach signal (LTF Signatures slaydiga ko'ra — odatda shu yetarli). \"iFVG retest\": sweep leg'ida FVG hosil bo'lib, keyin invalidatsiya qilinib, narx o'sha zonani qayta test qilgandagina signal — eng qattiq filtr, sezilarli kamroq signal beradi.", en:"\"None\": signal fires the moment a sweep happens. \"CISD\": signal fires once price closes back through the opening price of the leg that led into the sweep (per the LTF Signatures slide — usually enough). \"iFVG retest\": an FVG forms during the sweep leg, gets invalidated, and only fires once price retests that zone — the strictest filter, noticeably fewer signals."},
+    cisdScanWindowLabel: {uz:"Entry qidirish oynasi (sham soni)", en:"Entry search window (candles)"},
+    h4ConfirmLabel: {uz:"CRT rejimi: H4 sweep+CISD (bias) → M15 Continuation CISD yoki +OB (Entry)", en:"CRT mode: H4 sweep+CISD (bias) → M15 Continuation CISD or +OB (Entry)"},
+    h4ConfirmHint: {uz:"Yoqilganda: avval H4'ning o'zida to'liq sweep+CISD tekshiriladi (bias). Bias aniqlangach, M15'da Continuation CISD (yangi kichik sweep+CISD, bias bilan bir yo'nalishda) YOKI +OB retest (Order Block qayta testi) — qaysi biri birinchi tasdiqlansa, o'sha Entry bo'ladi. O'chirilsa, \"Entry tasdiqlash rejimi\" sozlamasi ishlatilib, faqat M15'ning o'z rolling lookback diapazonida signal qidiriladi.", en:"When on: a full sweep+CISD check runs on H4 itself first (bias). Once bias is set, M15 is searched for a Continuation CISD (a fresh, smaller sweep+CISD in the same direction) OR an OB retest (Order Block retest) — whichever confirms first becomes the entry. When off, the \"Entry confirmation mode\" setting is used instead, searching only M15's own rolling lookback range."},
+    tgEnabledLabel: {uz:"Telegram'ga signal yuborish", en:"Send signals to Telegram"},
+    tgHint: {uz:"Bot tokenni bu yerga yozmang — u faqat Cloudflare Worker'da (Settings → Variables and Secrets → TELEGRAM_BOT_TOKEN) saqlanadi. Bu yoqilishi uchun \"API manzili\" maydonida o'zingizning Worker manzilingiz turishi kerak (proxy-worker.js).", en:"Don't put the bot token here — it's only stored in the Cloudflare Worker (Settings → Variables and Secrets → TELEGRAM_BOT_TOKEN). For this to work, the \"API address\" field needs to point to your own Worker address (proxy-worker.js)."},
+    tgChatIdLabel: {uz:"Telegram Chat ID", en:"Telegram Chat ID"},
+    tgChatIdPlaceholder: {uz:"masalan: 123456789", en:"e.g. 123456789"},
+    tgTestBtn: {uz:"Sinov xabari yuborish", en:"Send test message"},
+    tgTestSending: {uz:"Yuborilmoqda...", en:"Sending..."},
+    cancelBtn: {uz:"Bekor qilish", en:"Cancel"},
+    saveBtn: {uz:"Saqlash va yangilash", en:"Save & refresh"},
+    historyTitle: {uz:"Signallar tarixi", en:"Signal history"},
+    historyClear: {uz:"Tozalash", en:"Clear"},
+    closeBtn: {uz:"Yopish", en:"Close"},
+    historyEmpty: {uz:"Tarix bo'sh — signal paydo bo'lganda shu yerga qo'shiladi.", en:"History is empty — entries appear here as signals occur."},
+    historyEntriesSuffix: {uz:"ta yozuv", en:"entries"},
+    historyActiveSuffix: {uz:"ta savdo faol", en:"trades active"},
+    thTime: {uz:"Vaqt", en:"Time"},
+    thType: {uz:"Turi", en:"Type"},
+    thDetail: {uz:"Tafsilot", en:"Detail"},
+    thResult: {uz:"Natija", en:"Result"},
+    thNextMove: {uz:"Keyingi harakat", en:"Follow-through"},
+    statsTitle: {uz:"Statistika", en:"Statistics"},
+    thCategory: {uz:"Turkum", en:"Category"},
+    thTotal: {uz:"Jami", en:"Total"},
+    thWinPct: {uz:"G'alaba %", en:"Win %"},
+    thAvgOvershoot: {uz:"O'rtacha overshoot (TP)", en:"Avg overshoot (TP)"},
+    statsEmpty: {uz:"Hali yopilgan savdo yo'q — TP yoki SL bo'lgach shu yerda ko'rinadi.", en:"No closed trades yet — they'll show up here once a TP or SL hits."},
+    statTotalClosed: {uz:"Jami yopilgan", en:"Total closed"},
+    statExpectancy: {uz:"Expectancy (R)", en:"Expectancy (R)"},
+    categoryMajor: {uz:"Yirik kripto", en:"Major crypto"},
+    categoryCommodity: {uz:"Tovar (metall/energiya)", en:"Commodity (metal/energy)"},
+    categoryLeveraged: {uz:"Leveraged ETF", en:"Leveraged ETF"},
+    categoryBstock: {uz:"bStock (aksiya)", en:"bStock (equity)"},
+    categoryAlt: {uz:"Kichik/Alt kripto", en:"Small-cap/Alt crypto"},
+    debugTitle: {uz:"Debug — nega signal yo'q?", en:"Debug — why no signal?"},
+    debugHint: {uz:"Har bir kuzatilayotgan coin uchun joriy siklda qaysi bosqichda turgani — signalning to'liq chiqishini kutmasdan, real vaqtda tekshirish uchun.", en:"Shows what pipeline stage each watched coin is at this cycle — check the logic in real time without waiting for a full signal to fire."},
+    debugEmpty: {uz:"Hali ma'lumot yo'q — birinchi sikl tugashini kuting.", en:"No data yet — wait for the first cycle to finish."},
+    thStatus: {uz:"Holat", en:"Status"},
+    debugNoData: {uz:"Ma'lumot yo'q (yuklanmoqda yoki kline yetarli emas)", en:"No data (still loading, or not enough candles)"},
+    debugSignalFired: {uz:"✅ Signal berildi", en:"✅ Signal fired"},
+    debugFgiBlocked: {uz:"🚫 FGI blokladi", en:"🚫 Blocked by FGI"},
+    debugWouldBe: {uz:"bo'lar edi", en:"would've been"},
+    debugAdxBlocked: {uz:"🚫 ADX blokladi", en:"🚫 Blocked by ADX"},
+    debugAdxBlockedSuffix: {uz:"kuchli qarama-qarshi trend", en:"strong counter-trend"},
+    debugEntryOtherFilter: {uz:"⏳ Entry tasdiqlandi, lekin boshqa filtr to'xtatdi", en:"⏳ Entry confirmed, but another filter blocked it"},
+    debugSweepWaiting: {uz:"kutilmoqda", en:"pending"},
+    debugSweepFound: {uz:"Sweep bor", en:"Sweep found"},
+    debugConfirmDefault: {uz:"tasdiq", en:"confirmation"},
+    debugH4NoBias: {uz:"H4'da CISD hali yo'q — bias kutilmoqda", en:"No H4 CISD yet — waiting for bias"},
+    debugH4BiasWaiting: {uz:"H4 bias aniqlangan, M15 Continuation CISD yoki +OB kutilmoqda", en:"H4 bias set, waiting for M15 Continuation CISD or +OB"},
+    debugCisdLabel: {uz:"CISD", en:"CISD"},
+    debugIfvgLabel: {uz:"iFVG retest", en:"iFVG retest"},
+    fgiTooltipFear: {uz:"Extreme Fear — SELL signallar to'xtatilgan", en:"Extreme Fear — SELL signals suppressed"},
+    fgiTooltipGreed: {uz:"Extreme Greed — BUY signallar to'xtatilgan", en:"Extreme Greed — BUY signals suppressed"},
+    errMissingApiOrChatId: {uz:"API manzili yoki Chat ID yo'q", en:"Missing API address or Chat ID"},
+    debugNoSweep: {uz:"— Sweep yo'q (diapazon ichida)", en:"— No sweep (inside range)"},
+    connLoadingText: {uz:"ulanmoqda...", en:"connecting..."},
+    connOkSuffix: {uz:"coin kuzatilmoqda", en:"coins watched"},
+    connUpdating: {uz:"yangilanmoqda...", en:"updating..."},
+    connError: {uz:"ulanish xatosi", en:"connection error"},
+    lastUpdatedPrefix: {uz:"yangilandi:", en:"updated:"},
+    lastUpdatedNever: {uz:"— hali yangilanmagan", en:"— not updated yet"},
+    refreshBtn: {uz:"↻ Yangilash", en:"↻ Refresh"},
+    refresh1min: {uz:"1 daqiqa", en:"1 minute"},
+    refresh5min: {uz:"5 daqiqa", en:"5 minutes"},
+    refresh15min: {uz:"15 daqiqa", en:"15 minutes"},
+    historyBtn: {uz:"🕓 Tarix", en:"🕓 History"},
+    statsBtn: {uz:"📊 Statistika", en:"📊 Statistics"},
+    debugBtn: {uz:"🔍 Debug", en:"🔍 Debug"},
+    settingsBtn: {uz:"⚙ Sozlamalar", en:"⚙ Settings"},
+    alertNeedChatId: {uz:"Avval Telegram Chat ID kiriting.", en:"Enter a Telegram Chat ID first."},
+    tgConnectedMsg: {uz:"✅ Liquidity Tape ulandi — bu sinov xabari.", en:"✅ Liquidity Tape connected — this is a test message."},
+    tgSentSuccess: {uz:"Yuborildi! Telegram'ni tekshiring.", en:"Sent! Check Telegram."},
+    tgSentErrorPrefix: {uz:"Xato:", en:"Error:"},
+    confirmClearHistory: {uz:"Butun signal tarixini o'chirishni tasdiqlaysizmi? (Faol kuzatilayotgan savdolar ham o'chadi)", en:"Delete the entire signal history? (Actively tracked trades will be cleared too.)"},
+    copiedLabel: {uz:"✓ nusxalandi", en:"✓ copied"},
+    tvTitle: {uz:"TradingView'da ochish", en:"Open on TradingView"},
+    unmatchedCustomPrefix: {uz:"Topilmadi (Binance Futures'da bunday coin yo'q):", en:"Not found (no such coin on Binance Futures):"},
+    entryCardLabel: {uz:"Entry", en:"Entry"},
+    slCardLabel: {uz:"Stop Loss", en:"Stop Loss"},
+    tpCardLabel: {uz:"Take Profit", en:"Take Profit"},
+    riskCardLabel: {uz:"Risk", en:"Risk"},
+    tcFundingMatch: {uz:"✓ funding mos keladi", en:"✓ funding matches"},
+    tcCrt: {uz:"✓ CRT (H4→M15)", en:"✓ CRT (H4→M15)"},
+    tcContCisd: {uz:"✓ H4 CISD + M15 Continuation CISD", en:"✓ H4 CISD + M15 Continuation CISD"},
+    tcContOb: {uz:"✓ H4 CISD + M15 +OB retest", en:"✓ H4 CISD + M15 +OB retest"},
+    tcCisd: {uz:"✓ CISD", en:"✓ CISD"},
+    tcIfvg: {uz:"✓ iFVG retest", en:"✓ iFVG retest"},
+    tcAdxAligned: {uz:"trend bilan mos", en:"trend-aligned"},
+    rrNote: {uz:"Qarama-qarshi likvidlik maqsadi:", en:"Opposing liquidity target:"},
+    typeLabelLong: {uz:"BUY / PUMP", en:"BUY / PUMP"},
+    typeLabelShort: {uz:"SELL / DUMP", en:"SELL / DUMP"},
+    typeLabelDiverg: {uz:"OI DIVERGENSIYA", en:"OI DIVERGENCE"},
+    resultActive: {uz:"⏳ Faol", en:"⏳ Active"},
+    followTpSuffix: {uz:"davom etdi", en:"kept running"},
+    followSlSuffix: {uz:"oshib ketdi", en:"overshot"},
+    oiNoteShortCovering: {uz:"Short covering — kuchsiz rally", en:"Short covering — weak rally"},
+    oiNoteLongLiq: {uz:"Long likvidatsiya — dump sekinlashmoqda", en:"Long liquidation — dump slowing"},
+    oiNoteNewLongs: {uz:"Yangi longlar — kuchli trend", en:"New longs — strong trend"},
+    oiNoteNewShorts: {uz:"Yangi shortlar — kuchli tushish", en:"New shorts — strong decline"},
+    oiDivergPrefix: {uz:"OI divergensiya —", en:"OI divergence —"},
+    fundingDumpRisk: {uz:"dump xavfi", en:"dump risk"},
+    fundingPumpRisk: {uz:"pump xavfi", en:"pump risk"},
+    sideBuy: {uz:"BUY", en:"BUY"},
+    sideSell: {uz:"SELL", en:"SELL"},
+    signalWord: {uz:"signal", en:"signal"},
+    entryWord: {uz:"Entry", en:"Entry"},
+    slWord: {uz:"SL", en:"SL"},
+    tpWord: {uz:"TP", en:"TP"},
+    tagCisdConfirmed: {uz:"CISD tasdiqlangan", en:"CISD confirmed"},
+    tagIfvgConfirmed: {uz:"iFVG retest tasdiqlangan", en:"iFVG retest confirmed"},
+    tagCrt: {uz:"CRT (H4→M15)", en:"CRT (H4→M15)"},
+    tagContCisd: {uz:"H4 CISD + M15 Continuation CISD", en:"H4 CISD + M15 Continuation CISD"},
+    tagContOb: {uz:"H4 CISD + M15 +OB retest", en:"H4 CISD + M15 +OB retest"},
+    tagAdxAligned: {uz:"ADX trend bilan mos", en:"ADX trend-aligned"},
+    footerLine1: {uz:"Ma'lumot Binance Futures ochiq API'sidan olinadi, hech qanday hisob yoki API kalit talab qilinmaydi.", en:"Data comes from Binance Futures' open API — no account or API key required."},
+    footerFgiPrefix: {uz:"Fear & Greed Index —", en:"Fear & Greed Index —"},
+    footerFgiSuffix: {uz:"manbasidan.", en:"as the source."},
+    footerLine2: {uz:"Sahifa faqat brauzeringizda ishlaydi — server yo'q, ma'lumot hech qayerga yuborilmaydi.", en:"This page runs entirely in your browser — no server, no data ever sent anywhere."},
+    footerLine3: {uz:"Bu dashboard faqat signal ko'rsatadi, savdo tavsiyasi emas; risk-menejmentni o'zingiz belgilang.", en:"This dashboard only displays signals, not trading advice — set your own risk management."},
+  };
+  function t(key){
+    const entry = I18N[key];
+    if(!entry) return key;
+    return entry[lang] || entry.uz || key;
+  }
+  // Builds the localized display message for a signal from its RAW data (not a
+  // pre-rendered string) — so switching language re-renders history correctly
+  // instead of leaving old entries stuck in whatever language they were logged in.
+  function msgFor(item){
+    if(item.kind === 'funding'){
+      const v = item.fundingValue;
+      return (v > 0 ? "Funding +" : "Funding ") + v.toFixed(4) + "% — " + (v > 0 ? t('fundingDumpRisk') : t('fundingPumpRisk'));
+    }
+    if(item.kind === 'diverg'){
+      return t('oiDivergPrefix') + " " + t(item.divergNoteKey);
+    }
+    if(item.kind === 'trade'){
+      // Tape/live items keep a nested `trade` sub-object; persisted history
+      // entries have the same fields flattened directly onto the entry itself
+      // (via Object.assign) — support both shapes.
+      const tr = item.trade || item;
+      const sideLabel = tr.side === 'buy' ? t('sideBuy') : t('sideSell');
+      let modeTag;
+      if(tr.crt && tr.continuationType === 'cisd') modeTag = ' · ' + t('tagContCisd');
+      else if(tr.crt && tr.continuationType === 'ob') modeTag = ' · ' + t('tagContOb');
+      else if(tr.entryMode === 'ifvg') modeTag = ' · ' + t('tagIfvgConfirmed');
+      else if(tr.entryMode === 'cisd') modeTag = ' · ' + t('tagCisdConfirmed');
+      else modeTag = '';
+      const adxTag = tr.adxAligned && tr.adxValue !== null ? ' · ' + t('tagAdxAligned') + ' (' + tr.adxValue.toFixed(0) + ')' : '';
+      return sideLabel + ' ' + t('signalWord') + ' — ' + t('entryWord') + ' ' + formatPrice(tr.entry) +
+             ', ' + t('slWord') + ' ' + formatPrice(tr.sl) + ', ' + t('tpWord') + ' ' + formatPrice(tr.tp) + modeTag + adxTag;
+    }
+    if(item.msg) return item.msg; // legacy entries saved before raw-field storage — show as originally logged
+    return '';
+  }
 
   const DEFAULTS = {
     apiBase: "https://fapi.binance.com",
@@ -811,15 +1066,18 @@
     atrMult: 0.5,             // SL buffer = max(slBufferPct, ATR * atrMult)
     cooldownMinutes: 30,      // min minutes before re-signaling same symbol+side after a TP/SL close
     postCloseTrackHours: 3,   // how long to keep watching price after TP/SL to measure continuation ("overshoot")
-    fgiFilterEnabled: true,        // block signals that pile onto an already-extreme Fear & Greed reading
+    fgiFilterEnabled: false,       // off by default — overlaps/conflicts with the ADX filter in strong trends (see notes)
     fgiExtremeFearThreshold: 25,   // F&G <= this -> Extreme Fear -> SELL signals suppressed
     fgiExtremeGreedThreshold: 75,  // F&G >= this -> Extreme Greed -> BUY signals suppressed
+    adxFilterEnabled: true,   // veto CRT reversal signals that fight an already-strong trend
+    adxThreshold: 20,         // ADX(14) >= this counts as "strong trend" (matches Xpert Algo's default)
     h4ConfirmEnabled: true,   // strict CRT mode: HTF range = single last-closed H4 candle (not a lookback window)
     entryConfirmMode: 'cisd',    // 'off' | 'cisd' | 'ifvg' — how entries are confirmed after a sweep
     cisdScanWindow: 8,        // recent candles searched for a sweep -> CISD confirmation pair
     tgEnabled: false,
     tgChatId: "",
-    refreshMs: 300000
+    refreshMs: 300000,
+    language: 'uz',   // 'uz' | 'en'
   };
 
   const SETTINGS_KEY = "liquidity_tape_settings_v1";
@@ -829,6 +1087,7 @@
   const POSTCLOSE_KEY = "liquidity_tape_postclose_v1";
   const HISTORY_MAX = 300;
   let settings = loadSettings();
+  let lang = settings.language === 'en' ? 'en' : 'uz';
   let signalHistory = loadHistory();
   let openTrades = loadOpenTrades(); // trades whose TP/SL hasn't hit yet: {id, symbol, side, entry, sl, tp, ts}
   let lastClosedAt = loadCooldowns(); // "SYMBOL_side" -> ms timestamp of last TP/SL close
@@ -927,6 +1186,9 @@
   const statsBtn = document.getElementById('statsBtn');
   const statsModal = document.getElementById('statsModal');
   const closeStats = document.getElementById('closeStats');
+  const debugBtn = document.getElementById('debugBtn');
+  const debugModal = document.getElementById('debugModal');
+  const closeDebug = document.getElementById('closeDebug');
   const addCoinInput = document.getElementById('addCoinInput');
   const addCoinBtn = document.getElementById('addCoinBtn');
   const customCoinChips = document.getElementById('customCoinChips');
@@ -951,6 +1213,8 @@
     document.getElementById('fgiFilterEnabled').checked = !!settings.fgiFilterEnabled;
     document.getElementById('fgiExtremeFearThreshold').value = settings.fgiExtremeFearThreshold;
     document.getElementById('fgiExtremeGreedThreshold').value = settings.fgiExtremeGreedThreshold;
+    document.getElementById('adxFilterEnabled').checked = !!settings.adxFilterEnabled;
+    document.getElementById('adxThreshold').value = settings.adxThreshold;
     document.getElementById('entryConfirmMode').value = settings.entryConfirmMode;
     document.getElementById('cisdScanWindow').value = settings.cisdScanWindow;
     document.getElementById('h4ConfirmEnabled').checked = !!settings.h4ConfirmEnabled;
@@ -984,6 +1248,9 @@
     settings.fgiExtremeFearThreshold = clamp(isNaN(fearRaw) ? DEFAULTS.fgiExtremeFearThreshold : fearRaw, 0, 50);
     const greedRaw = parseInt(document.getElementById('fgiExtremeGreedThreshold').value, 10);
     settings.fgiExtremeGreedThreshold = clamp(isNaN(greedRaw) ? DEFAULTS.fgiExtremeGreedThreshold : greedRaw, 50, 100);
+    settings.adxFilterEnabled = document.getElementById('adxFilterEnabled').checked;
+    const adxThRaw = parseInt(document.getElementById('adxThreshold').value, 10);
+    settings.adxThreshold = clamp(isNaN(adxThRaw) ? DEFAULTS.adxThreshold : adxThRaw, 10, 50);
     settings.entryConfirmMode = document.getElementById('entryConfirmMode').value;
     settings.cisdScanWindow = clamp(parseInt(document.getElementById('cisdScanWindow').value,10) || DEFAULTS.cisdScanWindow, 3, 20);
     settings.h4ConfirmEnabled = document.getElementById('h4ConfirmEnabled').checked;
@@ -998,15 +1265,15 @@
     const chatId = document.getElementById('tgChatId').value.trim();
     const apiBase = document.getElementById('apiBase').value.trim().replace(/\/+$/,'') || DEFAULTS.apiBase;
     if(!chatId){
-      alert("Avval Telegram Chat ID kiriting.");
+      alert(t('alertNeedChatId'));
       return;
     }
     tgTestBtn.disabled = true;
-    tgTestBtn.textContent = "Yuborilmoqda...";
-    const result = await sendTelegramMessage("✅ Liquidity Tape ulandi — bu sinov xabari.", apiBase, chatId);
+    tgTestBtn.textContent = t('tgTestSending');
+    const result = await sendTelegramMessage(t('tgConnectedMsg'), apiBase, chatId);
     tgTestBtn.disabled = false;
-    tgTestBtn.textContent = "Sinov xabari yuborish";
-    alert(result.ok ? "Yuborildi! Telegram'ni tekshiring." : "Xato: " + result.error);
+    tgTestBtn.textContent = t('tgTestBtn');
+    alert(result.ok ? t('tgSentSuccess') : t('tgSentErrorPrefix') + " " + result.error);
   });
 
   refreshSelect.addEventListener('change', () => {
@@ -1023,8 +1290,11 @@
   statsBtn.addEventListener('click', () => { renderStats(); statsModal.classList.add('show'); });
   closeStats.addEventListener('click', () => statsModal.classList.remove('show'));
   statsModal.addEventListener('click', (e) => { if(e.target === statsModal) statsModal.classList.remove('show'); });
+  debugBtn.addEventListener('click', () => { renderDebug(); debugModal.classList.add('show'); });
+  closeDebug.addEventListener('click', () => debugModal.classList.remove('show'));
+  debugModal.addEventListener('click', (e) => { if(e.target === debugModal) debugModal.classList.remove('show'); });
   clearHistoryBtn.addEventListener('click', () => {
-    if(signalHistory.length && confirm("Butun signal tarixini o'chirishni tasdiqlaysizmi? (Faol kuzatilayotgan savdolar ham o'chadi)")){
+    if(signalHistory.length && confirm(t('confirmClearHistory'))){
       signalHistory = [];
       openTrades = [];
       postCloseWatch = [];
@@ -1063,7 +1333,7 @@
 
   function renderCustomCoinChips(){
     if(!settings.customCoins.length){
-      customCoinChips.innerHTML = '<span class="chip-empty">Hali qo\'shilmagan — yuqoriga coin nomini yozib "+ Qo\'shish" bosing.</span>';
+      customCoinChips.innerHTML = '<span class="chip-empty">' + t('chipEmpty') + '</span>';
       return;
     }
     customCoinChips.innerHTML = settings.customCoins.map(sym =>
@@ -1122,6 +1392,167 @@
     if(side === 'buy' && fearGreedIndex.value >= settings.fgiExtremeGreedThreshold) return true;
     return false;
   }
+
+  // Wilder's ADX/DMI — trend strength (ADX) and direction (+DI vs -DI), computed
+  // from OHLC candles on the signal timeframe. Used to veto CRT reversal signals
+  // that would fight an already-strong trend (the exact "8 SL in a row on a
+  // trend day" failure mode diagnosed earlier).
+  function calculateADX(candles, period){
+    if(!candles || candles.length < period * 2 + 1) return null;
+    const highs = candles.map(c => parseFloat(c[2]));
+    const lows = candles.map(c => parseFloat(c[3]));
+    const closes = candles.map(c => parseFloat(c[4]));
+
+    const plusDM = [], minusDM = [], tr = [];
+    for(let i = 1; i < candles.length; i++){
+      const upMove = highs[i] - highs[i - 1];
+      const downMove = lows[i - 1] - lows[i];
+      plusDM.push((upMove > downMove && upMove > 0) ? upMove : 0);
+      minusDM.push((downMove > upMove && downMove > 0) ? downMove : 0);
+      tr.push(Math.max(highs[i] - lows[i], Math.abs(highs[i] - closes[i - 1]), Math.abs(lows[i] - closes[i - 1])));
+    }
+
+    function wilderSmooth(arr, p){
+      const out = [];
+      let sum = 0;
+      for(let i = 0; i < p; i++) sum += arr[i];
+      out.push(sum);
+      for(let i = p; i < arr.length; i++) out.push(out[out.length - 1] - (out[out.length - 1] / p) + arr[i]);
+      return out;
+    }
+    const sTR = wilderSmooth(tr, period);
+    const sPlusDM = wilderSmooth(plusDM, period);
+    const sMinusDM = wilderSmooth(minusDM, period);
+
+    const plusDI = [], minusDI = [], dx = [];
+    for(let i = 0; i < sTR.length; i++){
+      const pdi = sTR[i] !== 0 ? 100 * sPlusDM[i] / sTR[i] : 0;
+      const mdi = sTR[i] !== 0 ? 100 * sMinusDM[i] / sTR[i] : 0;
+      plusDI.push(pdi); minusDI.push(mdi);
+      dx.push((pdi + mdi) !== 0 ? 100 * Math.abs(pdi - mdi) / (pdi + mdi) : 0);
+    }
+    if(dx.length < period) return null;
+
+    let adx = 0;
+    for(let i = 0; i < period; i++) adx += dx[i];
+    adx /= period;
+    for(let i = period; i < dx.length; i++) adx = (adx * (period - 1) + dx[i]) / period;
+
+    const lastIdx = plusDI.length - 1;
+    const pdiLast = plusDI[lastIdx], mdiLast = minusDI[lastIdx];
+    return { value: adx, plusDI: pdiLast, minusDI: mdiLast, trendSide: pdiLast > mdiLast ? 'buy' : 'sell' };
+  }
+  function adxBlocksSide(side, adx){
+    if(!settings.adxFilterEnabled || !adx) return false;
+    return adx.value >= settings.adxThreshold && adx.trendSide !== side;
+  }
+
+  // Generic sweep+CISD detector: the earliest `refCount` candles in `klines`
+  // become the reference range, then the most recent `scanCount` candles are
+  // searched for a sweep of that range followed by a CISD close (price closing
+  // back through the opening price of the leg that led into the sweep). Fires
+  // only when the CISD confirmation lands on the very last candle in the scan
+  // window (freshness). Used both for H4 bias detection and for M15 entries
+  // (plain CISD mode, and the CRT model's M15 continuation-CISD stage).
+  function detectSweepCISD(klines, refCount, scanCount){
+    const neededLen = refCount + scanCount + 1;
+    if(!klines || klines.length < neededLen) return null;
+    const refRange = klines.slice(0, klines.length - scanCount);
+    const scan = klines.slice(klines.length - scanCount);
+    const priorHigh = Math.max(...refRange.map(c => parseFloat(c[2])));
+    const priorLow = Math.min(...refRange.map(c => parseFloat(c[3])));
+    const isBullish = c => parseFloat(c[4]) > parseFloat(c[1]);
+    const isBearish = c => parseFloat(c[4]) < parseFloat(c[1]);
+    const lastIdx = scan.length - 1;
+
+    function lastSweepIdx(getWick, level, above){
+      let found = -1;
+      for(let i = 0; i < scan.length; i++){
+        const w = getWick(scan[i]);
+        if(above ? w > level : w < level) found = i;
+      }
+      return found;
+    }
+    function cisdConfirmIdx(sweepIdx, matchFn, dir){
+      let j = sweepIdx, cisdLevel = null;
+      if(matchFn(scan[j])){ cisdLevel = parseFloat(scan[j][1]); } else { j = sweepIdx - 1; }
+      while(j >= 0 && matchFn(scan[j])){ cisdLevel = parseFloat(scan[j][1]); j--; }
+      if(cisdLevel === null) return null;
+      for(let k = sweepIdx; k < scan.length; k++){
+        const close = parseFloat(scan[k][4]);
+        if(dir === 'sell' && close < cisdLevel) return k;
+        if(dir === 'buy' && close > cisdLevel) return k;
+      }
+      return null;
+    }
+
+    let side = null, sweepAnchor = null, confirmIdx = null;
+    let sawSweepHigh = false, sawSweepLow = false;
+
+    const sweepHighIdx = lastSweepIdx(c => parseFloat(c[2]), priorHigh, true);
+    if(sweepHighIdx >= 0){
+      sawSweepHigh = true;
+      const cIdx = cisdConfirmIdx(sweepHighIdx, isBullish, 'sell');
+      if(cIdx === lastIdx){
+        side = 'sell';
+        sweepAnchor = Math.max(...scan.slice(sweepHighIdx, lastIdx + 1).map(c => parseFloat(c[2])));
+        confirmIdx = cIdx;
+      }
+    }
+    if(side === null){
+      const sweepLowIdx = lastSweepIdx(c => parseFloat(c[3]), priorLow, false);
+      if(sweepLowIdx >= 0){
+        sawSweepLow = true;
+        const cIdx = cisdConfirmIdx(sweepLowIdx, isBearish, 'buy');
+        if(cIdx === lastIdx){
+          side = 'buy';
+          sweepAnchor = Math.min(...scan.slice(sweepLowIdx, lastIdx + 1).map(c => parseFloat(c[3])));
+          confirmIdx = cIdx;
+        }
+      }
+    }
+    return { side, sweepAnchor, confirmIdx, sawSweepHigh, sawSweepLow, scan, priorHigh, priorLow };
+  }
+
+  // Order Block: within `scan`, the most recent candle of the OPPOSITE color to
+  // `side` that's immediately followed by an impulsive close beyond its
+  // high/low (buy: next candle closes above the OB candle's high; sell:
+  // mirrored). Returns the OB's price zone [low, high], or null if none found.
+  function findOrderBlock(scan, side){
+    const isBullish = c => parseFloat(c[4]) > parseFloat(c[1]);
+    const isBearish = c => parseFloat(c[4]) < parseFloat(c[1]);
+    for(let i = scan.length - 2; i >= 0; i--){
+      const cand = scan[i], next = scan[i + 1];
+      if(side === 'buy' && isBearish(cand) && parseFloat(next[4]) > parseFloat(cand[2])){
+        return { low: parseFloat(cand[3]), high: parseFloat(cand[2]), idx: i };
+      }
+      if(side === 'sell' && isBullish(cand) && parseFloat(next[4]) < parseFloat(cand[3])){
+        return { low: parseFloat(cand[3]), high: parseFloat(cand[2]), idx: i };
+      }
+    }
+    return null;
+  }
+  // Fires only when price retests the OB zone (wicks into it) AND reacts
+  // favorably (closes back on the bias side) on the very freshest candle. Scans
+  // starting from the candle AFTER the impulsive breakout candle (ob.idx+2) —
+  // the breakout candle itself is never counted as a "retest" of the zone it
+  // just broke away from. Keeps scanning through repeated tests as long as each
+  // one reacts; a candle that blows straight through without reacting
+  // invalidates the zone and stops the search entirely.
+  function checkObRetest(scan, ob, side){
+    const lastIdx = scan.length - 1;
+    let lastReactIdx = -1;
+    for(let k = ob.idx + 2; k < scan.length; k++){
+      const low = parseFloat(scan[k][3]), high = parseFloat(scan[k][2]), close = parseFloat(scan[k][4]);
+      const wickedIn = side === 'buy' ? (low <= ob.high) : (high >= ob.low);
+      if(!wickedIn) continue;
+      const reacted = side === 'buy' ? (close >= ob.low) : (close <= ob.high);
+      if(!reacted) return false; // blew straight through the zone -> invalidated
+      lastReactIdx = k; // valid reaction, but keep scanning for a possibly fresher one
+    }
+    return lastReactIdx === lastIdx; // only fires if the freshest candle was itself a reaction
+  }
+
   function renderFgiBadge(){
     const badge = document.getElementById('fgiBadge');
     if(!settings.fgiFilterEnabled || !fearGreedIndex){ badge.style.display = 'none'; return; }
@@ -1135,14 +1566,14 @@
     badge.className = 'status-pill ' + cls;
     badge.style.display = '';
     badge.textContent = 'F&G: ' + v + ' (' + label + ')';
-    badge.title = (cls === 'fgi-extreme-fear') ? 'Extreme Fear — SELL signallar to\'xtatilgan' :
-                  (cls === 'fgi-extreme-greed') ? 'Extreme Greed — BUY signallar to\'xtatilgan' : '';
+    badge.title = (cls === 'fgi-extreme-fear') ? t('fgiTooltipFear') :
+                  (cls === 'fgi-extreme-greed') ? t('fgiTooltipGreed') : '';
   }
 
   async function sendTelegramMessage(text, apiBaseOverride, chatIdOverride){
     const base = (apiBaseOverride || settings.apiBase || '').replace(/\/+$/,'');
     const chatId = chatIdOverride || settings.tgChatId;
-    if(!base || !chatId) return { ok:false, error: "API manzili yoki Chat ID yo'q" };
+    if(!base || !chatId) return { ok:false, error: t('errMissingApiOrChatId') };
     try{
       const resp = await fetch(base + '/tg/send', {
         method: 'POST',
@@ -1210,20 +1641,22 @@
   }
 
   async function getSymbolSignals(symbol, base){
-    const crtMode = settings.h4ConfirmEnabled; // strict CRT: HTF range = ONE real higher-timeframe candle
-    const entryMode = settings.entryConfirmMode; // 'off' | 'cisd' | 'ifvg'
-    const scanWindow = entryMode !== 'off' ? settings.cisdScanWindow : 1;
-    // In CRT mode the M15 range comes from the single H4 candle, not from a rolling
-    // M15 lookback, so we only need enough M15 candles for the scan window + ATR(14).
-    const refCandlesNeeded = crtMode ? 15 : settings.sweepLookback;
+    const crtMode = settings.h4ConfirmEnabled; // CRT model: H4 sweep+CISD (bias) -> M15 continuation-CISD or +OB retest (entry)
+    const entryMode = settings.entryConfirmMode; // 'off' | 'cisd' | 'ifvg' — only used when CRT mode is OFF
+    const scanWindow = crtMode ? settings.cisdScanWindow : (entryMode !== 'off' ? settings.cisdScanWindow : 1);
+    const refCandlesNeeded = settings.sweepLookback; // M15's own rolling range — needed in both modes now
     const neededLen = refCandlesNeeded + scanWindow + 1;
+    const h4NeededLen = settings.sweepLookback + settings.cisdScanWindow + 1; // H4 needs its own ref+scan window for CISD detection
 
-    const [premium, klines, oiHist, h4Klines] = await Promise.all([
+    const [premium, klines, oiHist, h4Klines, adxKlines] = await Promise.all([
       apiGet("/fapi/v1/premiumIndex", {symbol}).catch(() => null),
       apiGet("/fapi/v1/klines", {symbol, interval: settings.sweepInterval, limit: neededLen}).catch(() => null),
       apiGet("/futures/data/openInterestHist", {symbol, period: "15m", limit: 5}).catch(() => null),
       crtMode
-        ? apiGet("/fapi/v1/klines", {symbol, interval: "4h", limit: 3}).catch(() => null)
+        ? apiGet("/fapi/v1/klines", {symbol, interval: "4h", limit: h4NeededLen}).catch(() => null)
+        : Promise.resolve(null),
+      settings.adxFilterEnabled
+        ? apiGet("/fapi/v1/klines", {symbol, interval: settings.sweepInterval, limit: 60}).catch(() => null)
         : Promise.resolve(null),
     ]);
 
@@ -1237,8 +1670,10 @@
       diverg: null,     // {dir, priceChange, oiChange} | null
       divergRank: 0,
       trade: null,      // {side, entry, sl, tp, target, riskPct, confluence, rr} | null
-      crtHigh: null,     // CRTH — high of the last CLOSED H4 candle (CRT "Candle 1"), when CRT mode is on
-      crtLow: null,      // CRTL — low of the same candle
+      h4Bias: null,      // 'buy' | 'sell' | null — CRT model's H4-level sweep+CISD bias (Stage 1)
+      adx: null,         // {value, plusDI, minusDI, trendSide} — Wilder ADX/DMI on the signal timeframe
+      adxValue: null,    // flat number mirror of adx.value, for table sorting
+      debug: null,       // {sweepHigh, sweepLow, entrySide, blockedBy, finalSide, h4Bias} — for the "Debug" diagnostics panel
     };
 
     if(premium){
@@ -1246,25 +1681,70 @@
       if(out.price === null) out.price = parseFloat(premium.markPrice);
     }
 
-    // CRT "Candle 1": the range is the single most recently CLOSED higher-timeframe
-    // (H4) candle — not a rolling multi-candle lookback. h4Klines' last entry is the
-    // still-forming current H4 candle, so the closed one sits one index back.
-    if(crtMode && h4Klines && h4Klines.length >= 2){
-      const closedH4 = h4Klines[h4Klines.length - 2];
-      out.crtHigh = parseFloat(closedH4[2]);
-      out.crtLow = parseFloat(closedH4[3]);
+    if(settings.adxFilterEnabled && adxKlines && adxKlines.length >= 30){
+      out.adx = calculateADX(adxKlines, 14);
+      out.adxValue = out.adx ? out.adx.value : null;
+    }
+
+    // CRT Stage 1: H4-level bias via full sweep+CISD detection on H4 candles
+    // themselves (not just a raw candle's high/low) — a genuine higher-timeframe
+    // structural reversal, not merely "the previous candle's range".
+    if(crtMode && h4Klines){
+      const h4Result = detectSweepCISD(h4Klines, settings.sweepLookback, settings.cisdScanWindow);
+      out.h4Bias = h4Result ? h4Result.side : null;
     }
 
     if(klines && klines.length >= neededLen){
-      const useCrtRange = crtMode && out.crtHigh !== null && out.crtLow !== null;
-      const refRange = klines.slice(0, klines.length - scanWindow); // used for ATR, and as fallback range
-      const scan = klines.slice(klines.length - scanWindow);        // recent candles: sweep + CISD search here
-      const priorHigh = useCrtRange ? out.crtHigh : Math.max(...refRange.map(c => parseFloat(c[2])));
-      const priorLow = useCrtRange ? out.crtLow : Math.min(...refRange.map(c => parseFloat(c[3])));
-
       let side = null;         // 'buy' | 'sell'
       let sweepAnchor = null;  // price the SL sits beyond — the actual swept wick extreme
       let confirmIdx = null;   // index within `scan` where entry triggers
+      let scan = null, priorHigh = null, priorLow = null;
+      let sawSweepHigh = false, sawSweepLow = false; // for the debug panel: was ANY sweep found, even if entry never confirmed?
+      let continuationType = null; // 'cisd' | 'ob' | null — which M15 path fired (CRT mode only)
+
+      if(crtMode){
+        // CRT Stage 2: once H4 bias is set, look on M15 for EITHER a
+        // continuation-CISD (a fresh sweep+CISD in the same direction as the H4
+        // bias) OR a retest of the Order Block from the move into that bias —
+        // whichever confirms first wins. Continuation-CISD is tried first.
+        if(out.h4Bias){
+          const m15Cisd = detectSweepCISD(klines, refCandlesNeeded, scanWindow);
+          if(m15Cisd){
+            sawSweepHigh = m15Cisd.sawSweepHigh;
+            sawSweepLow = m15Cisd.sawSweepLow;
+            priorHigh = m15Cisd.priorHigh;
+            priorLow = m15Cisd.priorLow;
+            if(m15Cisd.side === out.h4Bias){
+              side = m15Cisd.side;
+              sweepAnchor = m15Cisd.sweepAnchor;
+              confirmIdx = m15Cisd.confirmIdx;
+              scan = m15Cisd.scan;
+              continuationType = 'cisd';
+            }
+          }
+          if(side === null){
+            const obWindow = klines.slice(-scanWindow);
+            const ob = findOrderBlock(obWindow, out.h4Bias);
+            if(ob && checkObRetest(obWindow, ob, out.h4Bias)){
+              side = out.h4Bias;
+              sweepAnchor = out.h4Bias === 'buy' ? ob.low : ob.high; // SL sits beyond the OB zone
+              confirmIdx = obWindow.length - 1;
+              scan = obWindow;
+              if(priorHigh === null){
+                const refRange = klines.slice(0, klines.length - scanWindow);
+                priorHigh = Math.max(...refRange.map(c => parseFloat(c[2])));
+                priorLow = Math.min(...refRange.map(c => parseFloat(c[3])));
+              }
+              continuationType = 'ob';
+            }
+          }
+        }
+      } else {
+
+      const refRange = klines.slice(0, klines.length - scanWindow); // used for ATR, and as fallback range
+      scan = klines.slice(klines.length - scanWindow);        // recent candles: sweep + CISD search here
+      priorHigh = Math.max(...refRange.map(c => parseFloat(c[2])));
+      priorLow = Math.min(...refRange.map(c => parseFloat(c[3])));
 
       if(entryMode === 'ifvg'){
         // iFVG retest entry: 1) sweep the range, 2) a Fair Value Gap (3-candle
@@ -1302,6 +1782,7 @@
 
         const sweepHighIdx = lastSweepIdx(c => parseFloat(c[2]), priorHigh, true);
         if(sweepHighIdx >= 0){
+          sawSweepHigh = true;
           const fvg = findBullishFVG(Math.max(0, sweepHighIdx - 2));
           if(fvg){
             let invalIdx = -1;
@@ -1324,6 +1805,7 @@
         if(side === null){
           const sweepLowIdx = lastSweepIdx(c => parseFloat(c[3]), priorLow, false);
           if(sweepLowIdx >= 0){
+            sawSweepLow = true;
             const fvg = findBearishFVG(Math.max(0, sweepLowIdx - 2));
             if(fvg){
               let invalIdx = -1;
@@ -1377,6 +1859,7 @@
 
         const sweepHighIdx = lastSweepIdx(c => parseFloat(c[2]), priorHigh, true);
         if(sweepHighIdx >= 0){
+          sawSweepHigh = true;
           const cIdx = cisdConfirmIdx(sweepHighIdx, isBullish, 'sell');
           if(cIdx === lastIdx){
             side = 'sell';
@@ -1387,6 +1870,7 @@
         if(side === null){
           const sweepLowIdx = lastSweepIdx(c => parseFloat(c[3]), priorLow, false);
           if(sweepLowIdx >= 0){
+            sawSweepLow = true;
             const cIdx = cisdConfirmIdx(sweepLowIdx, isBearish, 'buy');
             if(cIdx === lastIdx){
               side = 'buy';
@@ -1399,13 +1883,33 @@
         // legacy: sweep + close-back within the same candle (no wait for entry confirmation)
         const last = scan[scan.length - 1];
         const lastHigh = parseFloat(last[2]), lastLow = parseFloat(last[3]), lastClose = parseFloat(last[4]);
+        if(lastHigh > priorHigh){ sawSweepHigh = true; }
+        if(lastLow < priorLow){ sawSweepLow = true; }
         if(lastHigh > priorHigh && lastClose < priorHigh){ side = 'sell'; sweepAnchor = lastHigh; confirmIdx = scan.length - 1; }
         else if(lastLow < priorLow && lastClose > priorLow){ side = 'buy'; sweepAnchor = lastLow; confirmIdx = scan.length - 1; }
       }
 
+      } // end of else (non-CRT M15-only pipeline)
+
+      const entrySideBeforeFilters = side; // snapshot before FGI/ADX gating, for the debug panel
+      let blockedBy = null;
       if(side && fgiBlocksSide(side)){
+        blockedBy = 'fgi';
         side = null; // sentiment would be piled onto an already-extreme reading — suppress
       }
+      if(side && adxBlocksSide(side, out.adx)){
+        blockedBy = 'adx';
+        side = null; // strong trend running the other way — counter-trend reversal signal suppressed
+      }
+
+      out.debug = {
+        sweepHigh: sawSweepHigh,
+        sweepLow: sawSweepLow,
+        entrySide: entrySideBeforeFilters, // 'buy'/'sell' if entry confirmation completed this cycle, else null
+        blockedBy,                          // null | 'fgi' | 'adx'
+        finalSide: side,                    // non-null only if a signal actually fires
+        h4Bias: out.h4Bias,                  // CRT mode only: H4-level bias, or null if no H4 CISD yet
+      };
 
       if(side){
         out.sweep = side === 'sell' ? 'high' : 'low';
@@ -1438,9 +1942,11 @@
           if(side === 'buy' && out.funding < -settings.fundingThreshold) confluence++;
           if(side === 'sell' && out.funding > settings.fundingThreshold) confluence++;
         }
-        if(useCrtRange) confluence++; // structural: this signal IS built on a real H4 CRT range
+        if(crtMode && continuationType) confluence++; // structural: built on a real H4 CISD bias + M15 continuation
+        const adxAligned = settings.adxFilterEnabled && out.adx && out.adx.value >= settings.adxThreshold && out.adx.trendSide === side;
+        if(adxAligned) confluence++;
 
-        out.trade = { side, entry, sl, tp, target, riskPct, confluence, rr: settings.riskReward, cooldown: !!inCooldown, crt: useCrtRange, entryMode };
+        out.trade = { side, entry, sl, tp, target, riskPct, confluence, rr: settings.riskReward, cooldown: !!inCooldown, crt: crtMode && !!continuationType, continuationType, entryMode: crtMode ? null : entryMode, adx: out.adx, adxAligned };
       }
 
       // reuse klines for OI-divergence price reference (~60 min back at 15m => 4 candles)
@@ -1455,12 +1961,12 @@
       const oiChange = oldOi ? (newOi - oldOi) / oldOi * 100 : 0;
 
       if(Math.abs(priceChange) >= settings.oiPriceThreshold && Math.abs(oiChange) >= settings.oiThreshold){
-        let dir, note;
-        if(priceChange > 0 && oiChange < 0){ dir = 'down'; note = "Short covering — kuchsiz rally"; }
-        else if(priceChange < 0 && oiChange < 0){ dir = 'down'; note = "Long likvidatsiya — dump sekinlashmoqda"; }
-        else if(priceChange > 0 && oiChange > 0){ dir = 'up'; note = "Yangi longlar — kuchli trend"; }
-        else { dir = 'up'; note = "Yangi shortlar — kuchli tushish"; }
-        out.diverg = { dir, note, priceChange, oiChange };
+        let dir, noteKey;
+        if(priceChange > 0 && oiChange < 0){ dir = 'down'; noteKey = 'oiNoteShortCovering'; }
+        else if(priceChange < 0 && oiChange < 0){ dir = 'down'; noteKey = 'oiNoteLongLiq'; }
+        else if(priceChange > 0 && oiChange > 0){ dir = 'up'; noteKey = 'oiNoteNewLongs'; }
+        else { dir = 'up'; noteKey = 'oiNoteNewShorts'; }
+        out.diverg = { dir, noteKey, priceChange, oiChange };
         out.divergRank = 2;
       }
     }
@@ -1470,7 +1976,7 @@
 
   // ---------- Main cycle ----------
   async function runCycle(){
-    setConn('loading', 'yangilanmoqda...');
+    setConn('loading', t('connUpdating'));
     hideBanner();
     try{
       await fetchFearGreedIndex();
@@ -1480,7 +1986,7 @@
       const symbols = universe.symbols;
 
       if(universe.unmatchedCustom.length){
-        showCustomWarning("Topilmadi (Binance Futures'da bunday coin yo'q): " + universe.unmatchedCustom.join(", "));
+        showCustomWarning(t('unmatchedCustomPrefix') + " " + universe.unmatchedCustom.join(", "));
       } else {
         hideCustomWarning();
       }
@@ -1499,7 +2005,7 @@
           cycleSignals.push({
             symbol: r.symbol, key,
             type: r.funding > 0 ? 'short' : 'long',
-            msg: (r.funding > 0 ? "Funding +" : "Funding ") + r.funding.toFixed(4) + "% — " + (r.funding > 0 ? "dump xavfi" : "pump xavfi")
+            kind: 'funding', fundingValue: r.funding
           });
         }
         if(r.trade){
@@ -1512,14 +2018,11 @@
           // duplicate/overlapping positions and rapid-fire re-signaling (whipsaw).
           const alreadyOpen = openTrades.some(ot => ot.symbol === r.symbol && ot.side === t.side);
           if(!t.cooldown && !alreadyOpen){
-            const h4Tag = t.crt ? ' · CRT (H4→M15)' : '';
-            const cisdTag = t.entryMode === 'ifvg' ? ' · iFVG retest tasdiqlangan' : (t.entryMode === 'cisd' ? ' · CISD tasdiqlangan' : '');
             cycleSignals.push({
               symbol: r.symbol, key,
               type: t.side === 'buy' ? 'long' : 'short',
-              msg: (t.side === 'buy' ? 'BUY' : 'SELL') + ' signal — Entry ' + formatPrice(t.entry) +
-                   ', SL ' + formatPrice(t.sl) + ', TP ' + formatPrice(t.tp) + cisdTag + h4Tag,
-              trade: { side: t.side, entry: t.entry, sl: t.sl, tp: t.tp, crt: t.crt }
+              kind: 'trade',
+              trade: { side: t.side, entry: t.entry, sl: t.sl, tp: t.tp, crt: t.crt, continuationType: t.continuationType, adxAligned: t.adxAligned, adxValue: t.adx ? t.adx.value : null, entryMode: t.entryMode }
             });
           }
         }
@@ -1527,7 +2030,7 @@
           const key = r.symbol + ':diverg:' + r.diverg.dir;
           cycleSignals.push({
             symbol: r.symbol, key, type: 'diverg',
-            msg: "OI divergensiya — " + r.diverg.note
+            kind: 'diverg', divergNoteKey: r.diverg.noteKey
           });
         }
       });
@@ -1538,16 +2041,16 @@
       const newOnes = cycleSignals.filter(s => !seenSignalKeys.has(s.key));
       newOnes.forEach(s => {
         signalFeed.unshift(Object.assign({ts: now}, s));
-        const histEntry = { ts: now.toISOString(), symbol: s.symbol, type: s.type, msg: s.msg };
+        const histEntry = { ts: now.toISOString(), symbol: s.symbol, type: s.type, kind: s.kind, fundingValue: s.fundingValue, divergNoteKey: s.divergNoteKey };
         if(s.trade){
           tradeIdCounter++;
           const id = now.getTime() + '_' + tradeIdCounter;
-          Object.assign(histEntry, { id, side: s.trade.side, entry: s.trade.entry, sl: s.trade.sl, tp: s.trade.tp, crt: s.trade.crt, entryMode: s.trade.entryMode, outcome: null, closePrice: null, closedTs: null });
+          Object.assign(histEntry, { id, side: s.trade.side, entry: s.trade.entry, sl: s.trade.sl, tp: s.trade.tp, crt: s.trade.crt, continuationType: s.trade.continuationType, entryMode: s.trade.entryMode, adxAligned: s.trade.adxAligned, adxValue: s.trade.adxValue, outcome: null, closePrice: null, closedTs: null });
           openTrades.push({ id, symbol: s.symbol, side: s.trade.side, entry: s.trade.entry, sl: s.trade.sl, tp: s.trade.tp, ts: now.toISOString() });
         }
         signalHistory.unshift(histEntry);
         if(settings.tgEnabled){
-          sendTelegramMessage('<b>' + s.symbol.replace('USDT','') + '</b> — ' + s.msg);
+          sendTelegramMessage('<b>' + s.symbol.replace('USDT','') + '</b> — ' + msgFor(s));
         }
       });
       seenSignalKeys = new Set(cycleSignals.map(s => s.key));
@@ -1571,11 +2074,12 @@
       renderTape();
       renderTradeSignals(activeTrades);
       renderTable(Object.keys(newRows));
-      setConn('ok', symbols.length + " coin kuzatilmoqda");
-      lastUpdated.textContent = "yangilandi: " + now.toLocaleTimeString('uz-UZ');
+      if(debugModal.classList.contains('show')) renderDebug();
+      setConn('ok', symbols.length + " " + t('connOkSuffix'));
+      lastUpdated.textContent = t('lastUpdatedPrefix') + " " + now.toLocaleTimeString(lang === 'en' ? 'en-US' : 'uz-UZ');
 
     }catch(err){
-      setConn('err', 'ulanish xatosi');
+      setConn('err', t('connError'));
       showBanner("<b>API'ga ulanib bo'lmadi.</b> Bu odatda CORS cheklovi tufayli yuz beradi (brauzer to'g'ridan-to'g'ri Binance'ga so'rov yubora olmayapti). Sozlamalar &rarr; API manzili maydoniga proxy URL kiriting (README.md ichida Cloudflare Worker misoli bor). Xato: " + escapeHtml(err.message || String(err)));
     }
   }
@@ -1614,11 +2118,11 @@
     tapeContainer.innerHTML = '<div class="tape-track">' + itemsHtml + itemsHtml + '</div>';
   }
   function tapeItemHtml(s){
-    const time = s.ts.toLocaleTimeString('uz-UZ', {hour:'2-digit', minute:'2-digit'});
+    const time = s.ts.toLocaleTimeString(lang === 'en' ? 'en-US' : 'uz-UZ', {hour:'2-digit', minute:'2-digit'});
     return '<a class="tape-item ' + s.type + '" href="' + tradingViewUrl(s.symbol) + '" target="_blank" rel="noopener">' +
       '<span class="t">' + time + '</span>' +
       '<span class="sym">' + s.symbol.replace('USDT','') + '</span>' +
-      '<span class="msg">' + escapeHtml(s.msg) + '</span>' +
+      '<span class="msg">' + escapeHtml(msgFor(s)) + '</span>' +
       '</a>';
   }
 
@@ -1706,62 +2210,62 @@
     const body = document.getElementById('historyBody');
     const countEl = document.getElementById('historyCount');
     const openCount = openTrades.length;
-    countEl.textContent = signalHistory.length + " ta yozuv" + (openCount ? " · " + openCount + " ta savdo faol" : "");
+    countEl.textContent = signalHistory.length + " " + t('historyEntriesSuffix') + (openCount ? " · " + openCount + " " + t('historyActiveSuffix') : "");
     if(signalHistory.length === 0){
-      body.innerHTML = '<tr><td colspan="6" class="history-empty">Tarix bo\'sh — signal paydo bo\'lganda shu yerga qo\'shiladi.</td></tr>';
+      body.innerHTML = '<tr><td colspan="6" class="history-empty">' + t('historyEmpty') + '</td></tr>';
       return;
     }
     body.innerHTML = signalHistory.map(h => {
       const d = new Date(h.ts);
-      const time = d.toLocaleString('uz-UZ', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'});
+      const time = d.toLocaleString(lang === 'en' ? 'en-US' : 'uz-UZ', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'});
       const cls = h.type === 'long' ? 'htype-long' : (h.type === 'short' ? 'htype-short' : (h.type === 'diverg' ? 'htype-diverg' : ''));
-      const label = h.type === 'long' ? 'BUY / PUMP' : (h.type === 'short' ? 'SELL / DUMP' : 'OI DIVERGENSIYA');
+      const label = h.type === 'long' ? t('typeLabelLong') : (h.type === 'short' ? t('typeLabelShort') : t('typeLabelDiverg'));
       const base = h.symbol.replace('USDT','');
       let resultHtml;
       if(h.id === undefined){
         resultHtml = '<span class="res-na">—</span>';
       } else if(h.outcome === 'tp'){
-        resultHtml = '<span class="res-tp">✅ TP @ ' + formatPrice(h.closePrice) + '</span>';
+        resultHtml = '<span class="res-tp">✅ ' + t('tpWord') + ' @ ' + formatPrice(h.closePrice) + '</span>';
       } else if(h.outcome === 'sl'){
-        resultHtml = '<span class="res-sl">❌ SL @ ' + formatPrice(h.closePrice) + '</span>';
+        resultHtml = '<span class="res-sl">❌ ' + t('slWord') + ' @ ' + formatPrice(h.closePrice) + '</span>';
       } else {
-        resultHtml = '<span class="res-open">⏳ Faol</span>';
+        resultHtml = '<span class="res-open">' + t('resultActive') + '</span>';
       }
       let followHtml = '<span class="res-na">—</span>';
       if(h.postCloseMaxPct !== undefined && h.postCloseMaxPct !== null){
         const pct = h.postCloseMaxPct;
         const cls2 = pct >= 0 ? 'res-tp' : 'res-sl';
         const arrow = pct >= 0 ? '+' : '';
-        const label2 = h.outcome === 'tp' ? 'davom etdi' : 'oshib ketdi';
+        const label2 = h.outcome === 'tp' ? t('followTpSuffix') : t('followSlSuffix');
         followHtml = '<span class="' + cls2 + '">' + arrow + pct.toFixed(0) + '% ' + label2 + '</span>';
       }
-      return '<tr><td>' + time + '</td><td><a class="hist-sym" href="' + tradingViewUrl(h.symbol) + '" target="_blank" rel="noopener">' + base + '</a></td><td class="' + cls + '">' + label + '</td><td>' + escapeHtml(h.msg) + '</td><td>' + resultHtml + '</td><td>' + followHtml + '</td></tr>';
+      return '<tr><td>' + time + '</td><td><a class="hist-sym" href="' + tradingViewUrl(h.symbol) + '" target="_blank" rel="noopener">' + base + '</a></td><td class="' + cls + '">' + label + '</td><td>' + escapeHtml(msgFor(h)) + '</td><td>' + resultHtml + '</td><td>' + followHtml + '</td></tr>';
     }).join('');
   }
 
   // ---------- Symbol classification (for the Statistika breakdown) ----------
   const SYMBOL_CATEGORIES = {
-    // Yirik kripto (major)
-    BTC:'Yirik kripto', ETH:'Yirik kripto', SOL:'Yirik kripto', BNB:'Yirik kripto',
-    XRP:'Yirik kripto', ADA:'Yirik kripto', DOGE:'Yirik kripto', AVAX:'Yirik kripto',
-    LINK:'Yirik kripto', DOT:'Yirik kripto', MATIC:'Yirik kripto', LTC:'Yirik kripto',
-    BCH:'Yirik kripto', TRX:'Yirik kripto', ATOM:'Yirik kripto', ZEC:'Yirik kripto',
-    // Tovar (metall/energiya)
-    XAU:'Tovar (metall/energiya)', XAG:'Tovar (metall/energiya)', CL:'Tovar (metall/energiya)',
-    NG:'Tovar (metall/energiya)', HG:'Tovar (metall/energiya)',
+    // Major crypto
+    BTC:'categoryMajor', ETH:'categoryMajor', SOL:'categoryMajor', BNB:'categoryMajor',
+    XRP:'categoryMajor', ADA:'categoryMajor', DOGE:'categoryMajor', AVAX:'categoryMajor',
+    LINK:'categoryMajor', DOT:'categoryMajor', MATIC:'categoryMajor', LTC:'categoryMajor',
+    BCH:'categoryMajor', TRX:'categoryMajor', ATOM:'categoryMajor', ZEC:'categoryMajor',
+    // Commodity (metal/energy)
+    XAU:'categoryCommodity', XAG:'categoryCommodity', CL:'categoryCommodity',
+    NG:'categoryCommodity', HG:'categoryCommodity',
     // Leveraged ETF
-    SOXL:'Leveraged ETF', SOXS:'Leveraged ETF', TQQQ:'Leveraged ETF', SQQQ:'Leveraged ETF',
-    SPXL:'Leveraged ETF', SPXS:'Leveraged ETF', UPRO:'Leveraged ETF', SPXU:'Leveraged ETF',
-    TNA:'Leveraged ETF', TZA:'Leveraged ETF',
-    // bStock (tokenlashtirilgan aksiya)
-    SNDK:'bStock (aksiya)', MU:'bStock (aksiya)', SPCX:'bStock (aksiya)', SKHYNIX:'bStock (aksiya)',
-    SKHY:'bStock (aksiya)', NOKB:'bStock (aksiya)', AAPLB:'bStock (aksiya)', MUB:'bStock (aksiya)',
-    IBMB:'bStock (aksiya)', NVDA:'bStock (aksiya)', NVDAB:'bStock (aksiya)', G9B:'bStock (aksiya)',
-    N4B:'bStock (aksiya)',
+    SOXL:'categoryLeveraged', SOXS:'categoryLeveraged', TQQQ:'categoryLeveraged', SQQQ:'categoryLeveraged',
+    SPXL:'categoryLeveraged', SPXS:'categoryLeveraged', UPRO:'categoryLeveraged', SPXU:'categoryLeveraged',
+    TNA:'categoryLeveraged', TZA:'categoryLeveraged',
+    // bStock (tokenized equity)
+    SNDK:'categoryBstock', MU:'categoryBstock', SPCX:'categoryBstock', SKHYNIX:'categoryBstock',
+    SKHY:'categoryBstock', NOKB:'categoryBstock', AAPLB:'categoryBstock', MUB:'categoryBstock',
+    IBMB:'categoryBstock', NVDA:'categoryBstock', NVDAB:'categoryBstock', G9B:'categoryBstock',
+    N4B:'categoryBstock',
   };
   function classifySymbol(symbol){
     const base = symbol.replace('USDT','');
-    return SYMBOL_CATEGORIES[base] || 'Kichik/Alt kripto';
+    return SYMBOL_CATEGORIES[base] || 'categoryAlt';
   }
 
   function renderStats(){
@@ -1777,15 +2281,15 @@
     const expectancy = total ? (winPct/100 * rr - (1 - winPct/100)) : 0;
 
     summaryEl.innerHTML = [
-      ['Jami yopilgan', total],
-      ['✅ TP', tpCount],
-      ['❌ SL', slCount],
-      ["G'alaba %", total ? winPct.toFixed(0) + '%' : '—', winPct >= 50 ? 'pos' : (total ? 'neg' : '')],
-      ['Expectancy (R)', total ? (expectancy >= 0 ? '+' : '') + expectancy.toFixed(2) + 'R' : '—', expectancy >= 0 ? 'pos' : (total ? 'neg' : '')],
+      [t('statTotalClosed'), total],
+      ['✅ ' + t('tpWord'), tpCount],
+      ['❌ ' + t('slWord'), slCount],
+      [t('thWinPct'), total ? winPct.toFixed(0) + '%' : '—', winPct >= 50 ? 'pos' : (total ? 'neg' : '')],
+      [t('statExpectancy'), total ? (expectancy >= 0 ? '+' : '') + expectancy.toFixed(2) + 'R' : '—', expectancy >= 0 ? 'pos' : (total ? 'neg' : '')],
     ].map(([label, val, cls]) => '<div class="stat-box"><label>' + label + '</label><span class="' + (cls || '') + '">' + val + '</span></div>').join('');
 
     if(total === 0){
-      bodyEl.innerHTML = '<tr><td colspan="6" class="history-empty">Hali yopilgan savdo yo\'q — TP yoki SL bo\'lgach shu yerda ko\'rinadi.</td></tr>';
+      bodyEl.innerHTML = '<tr><td colspan="6" class="history-empty">' + t('statsEmpty') + '</td></tr>';
       return;
     }
 
@@ -1809,14 +2313,46 @@
       const wp = c.total ? (c.tp / c.total * 100) : 0;
       const avgOvershoot = c.overshootCount ? (c.overshootSum / c.overshootCount) : null;
       const wpCls = wp >= 50 ? 'res-tp' : 'res-sl';
-      return '<tr><td>' + cat + '</td><td>' + c.total + '</td><td class="res-tp">' + c.tp + '</td><td class="res-sl">' + c.sl + '</td><td class="' + wpCls + '">' + wp.toFixed(0) + '%</td><td>' + (avgOvershoot !== null ? '+' + avgOvershoot.toFixed(0) + '%' : '—') + '</td></tr>';
+      return '<tr><td>' + t(cat) + '</td><td>' + c.total + '</td><td class="res-tp">' + c.tp + '</td><td class="res-sl">' + c.sl + '</td><td class="' + wpCls + '">' + wp.toFixed(0) + '%</td><td>' + (avgOvershoot !== null ? '+' + avgOvershoot.toFixed(0) + '%' : '—') + '</td></tr>';
+    }).join('');
+  }
+
+  // Fast, real-time diagnostics: for every watched coin, shows exactly which
+  // pipeline stage it's at RIGHT NOW — no need to wait hours for a full signal
+  // to fire just to check whether the detection logic is even running correctly.
+  function debugStatusText(r){
+    const d = r.debug;
+    if(!d) return { text: t('debugNoData'), cls: 'res-na' };
+    if(d.finalSide) return { text: t('debugSignalFired') + ' (' + (d.finalSide === 'buy' ? t('sideBuy') : t('sideSell')) + ')', cls: 'res-tp' };
+    if(d.blockedBy === 'fgi') return { text: t('debugFgiBlocked') + ' (' + (d.entrySide === 'buy' ? t('sideBuy') : t('sideSell')) + ' ' + t('debugWouldBe') + ')', cls: 'res-sl' };
+    if(d.blockedBy === 'adx') return { text: t('debugAdxBlocked') + ' (' + (d.entrySide === 'buy' ? t('sideBuy') : t('sideSell')) + ' ' + t('debugWouldBe') + ', ' + t('debugAdxBlockedSuffix') + ')', cls: 'res-sl' };
+    if(d.entrySide) return { text: t('debugEntryOtherFilter'), cls: 'res-open' };
+    if(settings.h4ConfirmEnabled){
+      if(!d.h4Bias) return { text: t('debugH4NoBias'), cls: 'res-na' };
+      return { text: t('debugH4BiasWaiting') + ' (' + (d.h4Bias === 'buy' ? t('sideBuy') : t('sideSell')) + ')', cls: 'res-open' };
+    }
+    if(d.sweepHigh || d.sweepLow) return { text: t('debugSweepFound') + ' (' + (d.sweepHigh ? 'high' : 'low') + '), ' + (settings.entryConfirmMode === 'ifvg' ? t('debugIfvgLabel') : settings.entryConfirmMode === 'cisd' ? t('debugCisdLabel') : t('debugConfirmDefault')) + ' ' + t('debugSweepWaiting'), cls: 'res-open' };
+    return { text: t('debugNoSweep'), cls: 'res-na' };
+  }
+  function renderDebug(){
+    const bodyEl = document.getElementById('debugBody');
+    const list = Object.values(rows).sort((a, b) => a.symbol.localeCompare(b.symbol));
+    if(list.length === 0){
+      bodyEl.innerHTML = '<tr><td colspan="3" class="history-empty">' + t('debugEmpty') + '</td></tr>';
+      return;
+    }
+    bodyEl.innerHTML = list.map(r => {
+      const status = debugStatusText(r);
+      const base = r.symbol.replace('USDT','');
+      const adxText = r.adx ? r.adx.value.toFixed(0) + ' ' + (r.adx.trendSide === 'buy' ? '▲' : '▼') : '—';
+      return '<tr><td>' + base + '</td><td class="' + status.cls + '">' + status.text + '</td><td>' + adxText + '</td></tr>';
     }).join('');
   }
 
   function renderTradeSignals(list){
     const container = document.getElementById('tradeSignals');
     if(!list || list.length === 0){
-      container.innerHTML = '<div class="trade-empty">Hozircha faol signal yo\'q — sweep aniqlanganda shu yerda Entry/SL/TP bilan ko\'rinadi.</div>';
+      container.innerHTML = '<div class="trade-empty">' + t('tradeEmpty') + '</div>';
       return;
     }
     const sorted = list.slice().sort((a,b) => b.trade.confluence - a.trade.confluence);
@@ -1824,31 +2360,33 @@
   }
 
   function tradeCardHtml(r){
-    const t = r.trade;
+    const t2 = r.trade;
     const base = r.symbol.replace('USDT','');
-    const fundingMatch = (t.side === 'buy' && r.funding !== null && r.funding < -settings.fundingThreshold) ||
-                          (t.side === 'sell' && r.funding !== null && r.funding > settings.fundingThreshold);
+    const fundingMatch = (t2.side === 'buy' && r.funding !== null && r.funding < -settings.fundingThreshold) ||
+                          (t2.side === 'sell' && r.funding !== null && r.funding > settings.fundingThreshold);
     const tags = [];
-    if(t.entryMode === 'ifvg') tags.push('<span class="tc-conf tc-cisd">✓ iFVG retest</span>');
-    else if(t.entryMode === 'cisd') tags.push('<span class="tc-conf tc-cisd">✓ CISD</span>');
-    if(fundingMatch) tags.push('<span class="tc-conf">✓ funding mos keladi</span>');
-    if(t.crt) tags.push('<span class="tc-conf tc-h4">✓ CRT (H4→M15)</span>');
+    if(t2.crt && t2.continuationType === 'cisd') tags.push('<span class="tc-conf tc-h4">' + t('tcContCisd') + '</span>');
+    else if(t2.crt && t2.continuationType === 'ob') tags.push('<span class="tc-conf tc-h4">' + t('tcContOb') + '</span>');
+    else if(t2.entryMode === 'ifvg') tags.push('<span class="tc-conf tc-cisd">' + t('tcIfvg') + '</span>');
+    else if(t2.entryMode === 'cisd') tags.push('<span class="tc-conf tc-cisd">' + t('tcCisd') + '</span>');
+    if(fundingMatch) tags.push('<span class="tc-conf">' + t('tcFundingMatch') + '</span>');
+    if(t2.adxAligned && t2.adx) tags.push('<span class="tc-conf tc-adx">✓ ADX ' + t2.adx.value.toFixed(0) + ' (' + t('tcAdxAligned') + ')</span>');
     const tvUrl = tradingViewUrl(r.symbol);
-    return '<a class="trade-card ' + t.side + '" href="' + tvUrl + '" target="_blank" rel="noopener" title="TradingView\'da ochish">' +
+    return '<a class="trade-card ' + t2.side + '" href="' + tvUrl + '" target="_blank" rel="noopener" title="' + t('tvTitle') + '">' +
       '<div class="tc-head">' +
         '<div class="tc-head-left">' +
-          '<span class="tc-side">' + (t.side === 'buy' ? 'BUY' : 'SELL') + '</span>' +
+          '<span class="tc-side">' + (t2.side === 'buy' ? t('sideBuy') : t('sideSell')) + '</span>' +
           '<span class="tc-symbol">' + base + '/USDT</span>' +
         '</div>' +
         '<div class="tc-tags">' + tags.join('') + '</div>' +
       '</div>' +
       '<div class="tc-grid">' +
-        '<div><label>Entry</label><span class="copyable" onclick="copyTradeValue(event,\'' + formatPrice(t.entry) + '\')">' + formatPrice(t.entry) + '</span></div>' +
-        '<div><label>Stop Loss</label><span class="down copyable" onclick="copyTradeValue(event,\'' + formatPrice(t.sl) + '\')">' + formatPrice(t.sl) + '</span></div>' +
-        '<div><label>Take Profit</label><span class="up copyable" onclick="copyTradeValue(event,\'' + formatPrice(t.tp) + '\')">' + formatPrice(t.tp) + '</span></div>' +
-        '<div><label>Risk</label><span>' + t.riskPct.toFixed(2) + '%</span></div>' +
+        '<div><label>' + t('entryCardLabel') + '</label><span class="copyable" onclick="copyTradeValue(event,\'' + formatPrice(t2.entry) + '\')">' + formatPrice(t2.entry) + '</span></div>' +
+        '<div><label>' + t('slCardLabel') + '</label><span class="down copyable" onclick="copyTradeValue(event,\'' + formatPrice(t2.sl) + '\')">' + formatPrice(t2.sl) + '</span></div>' +
+        '<div><label>' + t('tpCardLabel') + '</label><span class="up copyable" onclick="copyTradeValue(event,\'' + formatPrice(t2.tp) + '\')">' + formatPrice(t2.tp) + '</span></div>' +
+        '<div><label>' + t('riskCardLabel') + '</label><span>' + t2.riskPct.toFixed(2) + '%</span></div>' +
       '</div>' +
-      '<div class="tc-note">R:R 1:' + t.rr + ' &middot; Qarama-qarshi likvidlik maqsadi: ' + formatPrice(t.target) + '</div>' +
+      '<div class="tc-note">R:R 1:' + t2.rr + ' &middot; ' + t('rrNote') + ' ' + formatPrice(t2.target) + '</div>' +
       '</a>';
   }
 
@@ -1867,7 +2405,7 @@
     const doFeedback = () => {
       const original = el.textContent;
       el.classList.add('copied');
-      el.textContent = '✓ nusxalandi';
+      el.textContent = t('copiedLabel');
       setTimeout(() => { el.textContent = original; el.classList.remove('copied'); }, 900);
     };
     if(navigator.clipboard && navigator.clipboard.writeText){
@@ -1906,7 +2444,7 @@
     });
 
     if(list.length === 0){
-      tableBody.innerHTML = '<tr><td colspan="6" class="empty-state">Natija topilmadi.</td></tr>';
+      tableBody.innerHTML = '<tr><td colspan="7" class="empty-state">' + t('tableNoResults') + '</td></tr>';
       return;
     }
 
@@ -1919,20 +2457,29 @@
     const fundingClass = r.funding === null ? 'dim' : (Math.abs(r.funding) >= settings.fundingThreshold ? (r.funding > 0 ? 'down' : 'up') : 'dim');
 
     let sweepCell = '<span class="dim">—</span>';
-    if(r.sweep === 'high') sweepCell = '<span class="badge sweep-high">' + sweepIcon + ' SELL</span>';
-    else if(r.sweep === 'low') sweepCell = '<span class="badge sweep-low">' + sweepIcon + ' BUY</span>';
+    if(r.sweep === 'high') sweepCell = '<span class="badge sweep-high">' + sweepIcon + ' ' + t('sideSell') + '</span>';
+    else if(r.sweep === 'low') sweepCell = '<span class="badge sweep-low">' + sweepIcon + ' ' + t('sideBuy') + '</span>';
 
     let divergCell = '<span class="dim">—</span>';
     if(r.diverg){
       const cls = r.diverg.dir === 'up' ? 'diverg-up' : 'diverg-down';
-      divergCell = '<span class="badge ' + cls + '">' + r.diverg.note + '</span>';
+      divergCell = '<span class="badge ' + cls + '">' + t(r.diverg.noteKey) + '</span>';
+    }
+
+    let adxCell = '<span class="dim">—</span>';
+    if(r.adx){
+      const strong = r.adx.value >= settings.adxThreshold;
+      const arrow = r.adx.trendSide === 'buy' ? '▲' : '▼';
+      const cls = strong ? (r.adx.trendSide === 'buy' ? 'up' : 'down') : 'dim';
+      adxCell = '<span class="' + cls + '">' + r.adx.value.toFixed(0) + ' ' + arrow + '</span>';
     }
 
     return '<tr>' +
-      '<td class="sym-cell">' + base + ' <span class="quote">/USDT</span></td>' +
+      '<td class="sym-cell"><a class="sym-link" href="' + tradingViewUrl(r.symbol) + '" target="_blank" rel="noopener">' + base + ' <span class="quote">/USDT</span></a></td>' +
       '<td class="num">' + (r.price !== null ? formatPrice(r.price) : '—') + '</td>' +
       '<td class="num ' + changeClass + '">' + (r.change24h !== null ? (r.change24h > 0 ? '+' : '') + r.change24h.toFixed(2) + '%' : '—') + '</td>' +
       '<td class="num ' + fundingClass + '">' + (r.funding !== null ? (r.funding > 0 ? '+' : '') + r.funding.toFixed(4) + '%' : '—') + '</td>' +
+      '<td class="num">' + adxCell + '</td>' +
       '<td>' + sweepCell + '</td>' +
       '<td>' + divergCell + '</td>' +
       '</tr>';
@@ -1943,6 +2490,41 @@
     if(p >= 1) return p.toFixed(4);
     return p.toFixed(6);
   }
+
+  // ---------- i18n: static DOM + language switch ----------
+  function applyStaticI18n(){
+    document.documentElement.lang = lang;
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+      el.textContent = t(el.getAttribute('data-i18n'));
+    });
+    document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+      el.placeholder = t(el.getAttribute('data-i18n-placeholder'));
+    });
+    document.querySelectorAll('#langToggle button').forEach(btn => {
+      btn.classList.toggle('active', btn.getAttribute('data-lang') === lang);
+    });
+  }
+  function setLanguage(newLang){
+    if(newLang !== 'en' && newLang !== 'uz') return;
+    lang = newLang;
+    settings.language = lang;
+    saveSettingsToStorage();
+    applyStaticI18n();
+    // Re-render everything that shows translated dynamic text, using data
+    // already in memory — no need to re-fetch from Binance for a language switch.
+    renderFgiBadge();
+    renderTape();
+    renderTradeSignals(Object.values(rows).filter(r => r.trade));
+    renderTable();
+    if(historyModal.classList.contains('show')) renderHistory();
+    if(statsModal.classList.contains('show')) renderStats();
+    if(debugModal.classList.contains('show')) renderDebug();
+  }
+  document.getElementById('langToggle').addEventListener('click', (e) => {
+    const btn = e.target.closest('button[data-lang]');
+    if(btn) setLanguage(btn.getAttribute('data-lang'));
+  });
+  applyStaticI18n();
 
   // ---------- Boot ----------
   runCycle();
