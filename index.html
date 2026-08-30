@@ -1,5 +1,6 @@
+
 <!DOCTYPE html>
-<html lang="uz">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -68,14 +69,6 @@
   }
 
   .status-cluster{display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
-  .lang-toggle{display:flex;border:1px solid var(--border);border-radius:20px;overflow:hidden;}
-  .lang-toggle button{
-    font-family:var(--font-mono);font-size:11px;font-weight:700;
-    padding:6px 12px;border:none;background:var(--panel);color:var(--text-faint);
-    cursor:pointer;transition:background 0.15s,color 0.15s;
-  }
-  .lang-toggle button.active{background:var(--gold);color:#1A1204;}
-  .lang-toggle button:not(.active):hover{color:var(--text);}
   .status-pill{
     display:flex;align-items:center;gap:7px;
     font-family:var(--font-mono);
@@ -188,7 +181,6 @@
   .tape-item.long .msg{color:var(--long);}
   .tape-item.short .msg{color:var(--short);}
   .tape-item.sweep .msg{color:var(--sweep);}
-  .tape-item.diverg .msg{color:var(--diverg);}
   .tape-empty{
     padding:18px 24px 18px 90px;
     font-family:var(--font-mono);
@@ -271,7 +263,6 @@
   .tc-tags{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;}
   .tc-h4{color:var(--long);background:rgba(52,211,153,0.12);}
   .tc-cisd{color:var(--diverg);background:rgba(96,165,250,0.12);}
-  .tc-adx{color:var(--gold);background:rgba(217,165,92,0.12);}
   .hist-sym{color:var(--text);text-decoration:none;font-weight:600;}
   .hist-sym:hover{color:var(--gold);text-decoration:underline;}
   .tc-h4-off{color:var(--text-faint);background:rgba(255,255,255,0.05);}
@@ -412,8 +403,6 @@
   }
   .badge.sweep-high{background:rgba(240,98,95,0.12);color:var(--short);}
   .badge.sweep-low{background:rgba(52,211,153,0.12);color:var(--long);}
-  .badge.diverg-up{background:rgba(199,146,234,0.12);color:var(--diverg);}
-  .badge.diverg-down{background:rgba(199,146,234,0.12);color:var(--diverg);}
   .badge svg{width:11px;height:11px;}
 
   .empty-state{
@@ -538,7 +527,6 @@
   .history-empty{padding:24px !important;text-align:center;color:var(--text-faint);}
   .htype-long{color:var(--long);font-weight:600;}
   .htype-short{color:var(--short);font-weight:600;}
-  .htype-diverg{color:var(--diverg);font-weight:600;}
   .res-tp{color:var(--long);font-weight:700;}
   .res-sl{color:var(--short);font-weight:700;}
   .res-open{color:var(--gold);font-weight:600;}
@@ -575,10 +563,6 @@
       <button class="btn" id="statsBtn" data-i18n="statsBtn">📊 Statistika</button>
       <button class="btn" id="debugBtn" data-i18n="debugBtn">🔍 Debug</button>
       <button class="btn" id="settingsBtn" data-i18n="settingsBtn">⚙ Sozlamalar</button>
-      <div class="lang-toggle" id="langToggle">
-        <button type="button" data-lang="uz" class="active">UZ</button>
-        <button type="button" data-lang="en">EN</button>
-      </div>
     </div>
   </div>
 
@@ -613,7 +597,6 @@
         <span><i style="background:var(--long)"></i> <span data-i18n="legendFundingPump">Funding: pump xavfi</span></span>
         <span><i style="background:var(--long)"></i> <span data-i18n="legendBuySweep">BUY signal (sweep)</span></span>
         <span><i style="background:var(--short)"></i> <span data-i18n="legendSellSweep">SELL signal (sweep)</span></span>
-        <span><i style="background:var(--diverg)"></i> <span data-i18n="legendOiDiverg">OI divergensiya</span></span>
       </div>
     </div>
   </div>
@@ -627,9 +610,7 @@
           <th data-key="price" class="num" data-i18n="thPrice">Narx</th>
           <th data-key="change24h" class="num" data-i18n="th24h">24s %</th>
           <th data-key="funding" class="num" data-i18n="thFunding">Funding</th>
-          <th data-key="adxValue" class="num" data-i18n="thAdx">ADX</th>
           <th data-key="sweepRank" data-i18n="thSignal">Signal</th>
-          <th data-key="divergRank" data-i18n="thOiPrice">OI / Narx</th>
         </tr>
       </thead>
       <tbody id="tableBody">
@@ -667,17 +648,6 @@
         <div class="field">
           <label data-i18n="sweepIntervalLabel">Sweep interval</label>
           <input type="text" id="sweepInterval" value="15m">
-        </div>
-      </div>
-
-      <div class="field-row">
-        <div class="field">
-          <label data-i18n="oiPriceThresholdLabel">OI narx chegarasi (%)</label>
-          <input type="number" id="oiPriceThreshold" step="0.1" value="2">
-        </div>
-        <div class="field">
-          <label data-i18n="oiThresholdLabel">OI o'zgarish chegarasi (%)</label>
-          <input type="number" id="oiThreshold" step="0.1" value="3">
         </div>
       </div>
 
@@ -724,18 +694,6 @@
           <label data-i18n="fgiGreedLabel">Extreme Greed chegarasi (&ge;)</label>
           <input type="number" id="fgiExtremeGreedThreshold" step="1" min="50" max="100" value="75">
         </div>
-      </div>
-
-      <div class="field">
-        <label><input type="checkbox" id="adxFilterEnabled" style="width:auto;margin-right:7px;vertical-align:middle;"><span data-i18n="adxFilterLabel">ADX trend-filtri: kuchli trendga qarshi CRT signalni to'xtatish</span></label>
-        <div class="hint" data-i18n="adxFilterHint">Yoqilganda: Signal timeframe'da (Wilder ADX 14) trend kuchi chegaradan yuqori bo'lsa VA CRT signal shu trendga qarshi (masalan kuchli ko'tarilishda SELL) bo'lsa — signal butunlay berilmaydi. Trend bilan bir xil yo'nalishdagi signallar cheklanmaydi, aksincha qo'shimcha tasdiq sifatida belgilanadi.</div>
-      </div>
-      <div class="field-row">
-        <div class="field">
-          <label data-i18n="adxThresholdLabel">ADX chegarasi (kuchli trend)</label>
-          <input type="number" id="adxThreshold" step="1" min="10" max="50" value="20">
-        </div>
-        <div class="field"></div>
       </div>
 
       <div class="field">
@@ -822,7 +780,7 @@
       <div class="hint" style="margin-bottom:12px;" data-i18n="debugHint">Har bir kuzatilayotgan coin uchun joriy siklda qaysi bosqichda turgani — signalning to'liq chiqishini kutmasdan, real vaqtda tekshirish uchun.</div>
       <div class="history-table-wrap">
         <table class="history-table">
-          <thead><tr><th data-i18n="thCoin">Coin</th><th data-i18n="thStatus">Holat</th><th data-i18n="thAdx">ADX</th></tr></thead>
+          <thead><tr><th data-i18n="thCoin">Coin</th><th data-i18n="thStatus">Holat</th></tr></thead>
           <tbody id="debugBody"></tbody>
         </table>
       </div>
@@ -845,192 +803,170 @@
 
   // ---------- i18n ----------
   const I18N = {
-    tapeWaiting: {uz:"Signallar kutilmoqda — birinchi tsikl tugagach shu yerda ko'rinadi.", en:"Waiting for signals — they'll appear here after the first cycle finishes."},
-    sectionTradeSignals: {uz:"SAVDO SIGNALLARI", en:"TRADE SIGNALS"},
-    sectionTradeSignalsSub: {uz:"— Entry / Stop Loss / Take Profit, liquidity sweep asosida", en:"— Entry / Stop Loss / Take Profit, based on liquidity sweeps"},
-    tradeEmpty: {uz:"Hozircha faol signal yo'q — sweep aniqlanganda shu yerda Entry/SL/TP bilan ko'rinadi.", en:"No active signals yet — they'll show up here with Entry/SL/TP once a sweep is detected."},
-    ccpLabel: {uz:"Qo'shimcha kuzatiladigan coinlar", en:"Additional watched coins"},
-    addCoinPlaceholder: {uz:"masalan: PEPE", en:"e.g. PEPE"},
-    addCoinBtn: {uz:"+ Qo'shish", en:"+ Add"},
-    chipEmpty: {uz:"Hali qo'shilmagan — yuqoriga coin nomini yozib \"+ Qo'shish\" bosing.", en:"None added yet — type a coin name above and click \"+ Add\"."},
-    searchPlaceholder: {uz:"Coin qidirish...", en:"Search coins..."},
-    legendFundingDump: {uz:"Funding: dump xavfi", en:"Funding: dump risk"},
-    legendFundingPump: {uz:"Funding: pump xavfi", en:"Funding: pump risk"},
-    legendBuySweep: {uz:"BUY signal (sweep)", en:"BUY signal (sweep)"},
-    legendSellSweep: {uz:"SELL signal (sweep)", en:"SELL signal (sweep)"},
-    legendOiDiverg: {uz:"OI divergensiya", en:"OI divergence"},
-    thCoin: {uz:"Coin", en:"Coin"},
-    thPrice: {uz:"Narx", en:"Price"},
-    th24h: {uz:"24s %", en:"24h %"},
-    thFunding: {uz:"Funding", en:"Funding"},
-    thAdx: {uz:"ADX", en:"ADX"},
-    thSignal: {uz:"Signal", en:"Signal"},
-    thOiPrice: {uz:"OI / Narx", en:"OI / Price"},
-    tableLoading: {uz:"Ma'lumot yuklanmoqda...", en:"Loading data..."},
-    tableNoResults: {uz:"Natija topilmadi.", en:"No results found."},
-    settingsTitle: {uz:"Sozlamalar", en:"Settings"},
-    apiBaseLabel: {uz:"API manzili (CORS xatosi bo'lsa proxy yozing)", en:"API address (enter a proxy if you hit a CORS error)"},
-    apiBaseHint: {uz:"Brauzer to'g'ridan-to'g'ri Binance'ga ulana olmasa (CORS), README'dagi Cloudflare Worker proxy manzilini shu yerga yozing.", en:"If your browser can't connect to Binance directly (CORS), enter the Cloudflare Worker proxy address from the README here."},
-    topNLabel: {uz:"Top nechta coin", en:"Top N coins"},
-    fundingThresholdLabel: {uz:"Funding chegarasi (%)", en:"Funding threshold (%)"},
-    sweepLookbackLabel: {uz:"Sweep lookback (sham soni)", en:"Sweep lookback (candles)"},
-    sweepIntervalLabel: {uz:"Sweep interval", en:"Sweep interval"},
-    oiPriceThresholdLabel: {uz:"OI narx chegarasi (%)", en:"OI price threshold (%)"},
-    oiThresholdLabel: {uz:"OI o'zgarish chegarasi (%)", en:"OI change threshold (%)"},
-    riskRewardLabel: {uz:"Risk:Reward (TP nisbati)", en:"Risk:Reward (TP ratio)"},
-    slBufferLabel: {uz:"SL bufer (%, wick'dan tashqarida)", en:"SL buffer (%, beyond the wick)"},
-    atrMultLabel: {uz:"ATR ko'paytiruvchi (SL, volatillikka moslashadi)", en:"ATR multiplier (SL, adapts to volatility)"},
-    cooldownLabel: {uz:"Cooldown (daqiqa, TP/SL'dan keyin)", en:"Cooldown (minutes, after TP/SL)"},
-    postCloseLabel: {uz:"Yopilgandan keyin kuzatish (soat)", en:"Track after close (hours)"},
-    fgiFilterLabel: {uz:"Fear & Greed Index filtri: ekstremal kayfiyatga qarshi signalni to'xtatish", en:"Fear & Greed Index filter: block signals against extreme sentiment"},
-    fgiFilterHint: {uz:"Yoqilganda: Extreme Fear paytida SELL signallar, Extreme Greed paytida BUY signallar butunlay berilmaydi (chunki ular allaqachon ekstremal kayfiyatga qo'shilib ketardi). Manba: alternative.me Fear & Greed Index, 1 soatda bir marta yangilanadi.", en:"When on: SELL signals during Extreme Fear and BUY signals during Extreme Greed are suppressed entirely (since they'd be piling onto an already-extreme reading). Source: alternative.me Fear & Greed Index, updates once an hour."},
-    fgiFearLabel: {uz:"Extreme Fear chegarasi (≤)", en:"Extreme Fear threshold (≤)"},
-    fgiGreedLabel: {uz:"Extreme Greed chegarasi (≥)", en:"Extreme Greed threshold (≥)"},
-    adxFilterLabel: {uz:"ADX trend-filtri: kuchli trendga qarshi CRT signalni to'xtatish", en:"ADX trend filter: block CRT signals against a strong trend"},
-    adxFilterHint: {uz:"Yoqilganda: Signal timeframe'da (Wilder ADX 14) trend kuchi chegaradan yuqori bo'lsa VA CRT signal shu trendga qarshi (masalan kuchli ko'tarilishda SELL) bo'lsa — signal butunlay berilmaydi. Trend bilan bir xil yo'nalishdagi signallar cheklanmaydi, aksincha qo'shimcha tasdiq sifatida belgilanadi.", en:"When on: if trend strength (Wilder ADX 14, on the signal timeframe) is above the threshold AND the CRT signal opposes that trend (e.g. SELL during a strong rally) — the signal is suppressed entirely. Signals aligned with the trend aren't restricted, and are marked as extra-confirmed instead."},
-    adxThresholdLabel: {uz:"ADX chegarasi (kuchli trend)", en:"ADX threshold (strong trend)"},
-    entryModeLabel: {uz:"Entry tasdiqlash rejimi", en:"Entry confirmation mode"},
-    entryModeOffOpt: {uz:"Yo'q — sweep + close-back (darhol, eng ko'p signal)", en:"None — sweep + close-back (instant, most signals)"},
-    entryModeCisdOpt: {uz:"CISD — structure break (birinchi toza LTF signal)", en:"CISD — structure break (first clean LTF signal)"},
-    entryModeIfvgOpt: {uz:"iFVG retest — FVG invalidatsiya + qayta test (eng aniq, kamroq signal)", en:"iFVG retest — FVG invalidation + retest (most precise, fewer signals)"},
-    entryModeHint: {uz:"\"Yo'q\": sweep bo'lgan zahoti signal. \"CISD\": sweep'dan oldingi legning boshlang'ich ochilish narxi sinib yopilgach signal (LTF Signatures slaydiga ko'ra — odatda shu yetarli). \"iFVG retest\": sweep leg'ida FVG hosil bo'lib, keyin invalidatsiya qilinib, narx o'sha zonani qayta test qilgandagina signal — eng qattiq filtr, sezilarli kamroq signal beradi.", en:"\"None\": signal fires the moment a sweep happens. \"CISD\": signal fires once price closes back through the opening price of the leg that led into the sweep (per the LTF Signatures slide — usually enough). \"iFVG retest\": an FVG forms during the sweep leg, gets invalidated, and only fires once price retests that zone — the strictest filter, noticeably fewer signals."},
-    cisdScanWindowLabel: {uz:"Entry qidirish oynasi (sham soni)", en:"Entry search window (candles)"},
-    h4ConfirmLabel: {uz:"CRT rejimi: H4 sweep+CISD (bias) → M15 Continuation CISD yoki +OB (Entry)", en:"CRT mode: H4 sweep+CISD (bias) → M15 Continuation CISD or +OB (Entry)"},
-    h4ConfirmHint: {uz:"Yoqilganda: avval H4'ning o'zida to'liq sweep+CISD tekshiriladi (bias). Bias aniqlangach, M15'da Continuation CISD (yangi kichik sweep+CISD, bias bilan bir yo'nalishda) YOKI +OB retest (Order Block qayta testi) — qaysi biri birinchi tasdiqlansa, o'sha Entry bo'ladi. O'chirilsa, \"Entry tasdiqlash rejimi\" sozlamasi ishlatilib, faqat M15'ning o'z rolling lookback diapazonida signal qidiriladi.", en:"When on: a full sweep+CISD check runs on H4 itself first (bias). Once bias is set, M15 is searched for a Continuation CISD (a fresh, smaller sweep+CISD in the same direction) OR an OB retest (Order Block retest) — whichever confirms first becomes the entry. When off, the \"Entry confirmation mode\" setting is used instead, searching only M15's own rolling lookback range."},
-    tgEnabledLabel: {uz:"Telegram'ga signal yuborish", en:"Send signals to Telegram"},
-    tgHint: {uz:"Bot tokenni bu yerga yozmang — u faqat Cloudflare Worker'da (Settings → Variables and Secrets → TELEGRAM_BOT_TOKEN) saqlanadi. Bu yoqilishi uchun \"API manzili\" maydonida o'zingizning Worker manzilingiz turishi kerak (proxy-worker.js).", en:"Don't put the bot token here — it's only stored in the Cloudflare Worker (Settings → Variables and Secrets → TELEGRAM_BOT_TOKEN). For this to work, the \"API address\" field needs to point to your own Worker address (proxy-worker.js)."},
-    tgChatIdLabel: {uz:"Telegram Chat ID", en:"Telegram Chat ID"},
-    tgChatIdPlaceholder: {uz:"masalan: 123456789", en:"e.g. 123456789"},
-    tgTestBtn: {uz:"Sinov xabari yuborish", en:"Send test message"},
-    tgTestSending: {uz:"Yuborilmoqda...", en:"Sending..."},
-    cancelBtn: {uz:"Bekor qilish", en:"Cancel"},
-    saveBtn: {uz:"Saqlash va yangilash", en:"Save & refresh"},
-    historyTitle: {uz:"Signallar tarixi", en:"Signal history"},
-    historyClear: {uz:"Tozalash", en:"Clear"},
-    closeBtn: {uz:"Yopish", en:"Close"},
-    historyEmpty: {uz:"Tarix bo'sh — signal paydo bo'lganda shu yerga qo'shiladi.", en:"History is empty — entries appear here as signals occur."},
-    historyEntriesSuffix: {uz:"ta yozuv", en:"entries"},
-    historyActiveSuffix: {uz:"ta savdo faol", en:"trades active"},
-    thTime: {uz:"Vaqt", en:"Time"},
-    thType: {uz:"Turi", en:"Type"},
-    thDetail: {uz:"Tafsilot", en:"Detail"},
-    thResult: {uz:"Natija", en:"Result"},
-    thNextMove: {uz:"Keyingi harakat", en:"Follow-through"},
-    statsTitle: {uz:"Statistika", en:"Statistics"},
-    thCategory: {uz:"Turkum", en:"Category"},
-    thTotal: {uz:"Jami", en:"Total"},
-    thWinPct: {uz:"G'alaba %", en:"Win %"},
-    thAvgOvershoot: {uz:"O'rtacha overshoot (TP)", en:"Avg overshoot (TP)"},
-    statsEmpty: {uz:"Hali yopilgan savdo yo'q — TP yoki SL bo'lgach shu yerda ko'rinadi.", en:"No closed trades yet — they'll show up here once a TP or SL hits."},
-    statTotalClosed: {uz:"Jami yopilgan", en:"Total closed"},
-    statExpectancy: {uz:"Expectancy (R)", en:"Expectancy (R)"},
-    categoryMajor: {uz:"Yirik kripto", en:"Major crypto"},
-    categoryCommodity: {uz:"Tovar (metall/energiya)", en:"Commodity (metal/energy)"},
-    categoryLeveraged: {uz:"Leveraged ETF", en:"Leveraged ETF"},
-    categoryBstock: {uz:"bStock (aksiya)", en:"bStock (equity)"},
-    categoryAlt: {uz:"Kichik/Alt kripto", en:"Small-cap/Alt crypto"},
-    debugTitle: {uz:"Debug — nega signal yo'q?", en:"Debug — why no signal?"},
-    debugHint: {uz:"Har bir kuzatilayotgan coin uchun joriy siklda qaysi bosqichda turgani — signalning to'liq chiqishini kutmasdan, real vaqtda tekshirish uchun.", en:"Shows what pipeline stage each watched coin is at this cycle — check the logic in real time without waiting for a full signal to fire."},
-    debugEmpty: {uz:"Hali ma'lumot yo'q — birinchi sikl tugashini kuting.", en:"No data yet — wait for the first cycle to finish."},
-    thStatus: {uz:"Holat", en:"Status"},
-    debugNoData: {uz:"Ma'lumot yo'q (yuklanmoqda yoki kline yetarli emas)", en:"No data (still loading, or not enough candles)"},
-    debugSignalFired: {uz:"✅ Signal berildi", en:"✅ Signal fired"},
-    debugFgiBlocked: {uz:"🚫 FGI blokladi", en:"🚫 Blocked by FGI"},
-    debugWouldBe: {uz:"bo'lar edi", en:"would've been"},
-    debugAdxBlocked: {uz:"🚫 ADX blokladi", en:"🚫 Blocked by ADX"},
-    debugAdxBlockedSuffix: {uz:"kuchli qarama-qarshi trend", en:"strong counter-trend"},
-    debugEntryOtherFilter: {uz:"⏳ Entry tasdiqlandi, lekin boshqa filtr to'xtatdi", en:"⏳ Entry confirmed, but another filter blocked it"},
-    debugSweepWaiting: {uz:"kutilmoqda", en:"pending"},
-    debugSweepFound: {uz:"Sweep bor", en:"Sweep found"},
-    debugConfirmDefault: {uz:"tasdiq", en:"confirmation"},
-    debugH4NoBias: {uz:"H4'da CISD hali yo'q — bias kutilmoqda", en:"No H4 CISD yet — waiting for bias"},
-    debugH4BiasWaiting: {uz:"H4 bias aniqlangan, M15 Continuation CISD yoki +OB kutilmoqda", en:"H4 bias set, waiting for M15 Continuation CISD or +OB"},
-    debugCisdLabel: {uz:"CISD", en:"CISD"},
-    debugIfvgLabel: {uz:"iFVG retest", en:"iFVG retest"},
-    fgiTooltipFear: {uz:"Extreme Fear — SELL signallar to'xtatilgan", en:"Extreme Fear — SELL signals suppressed"},
-    fgiTooltipGreed: {uz:"Extreme Greed — BUY signallar to'xtatilgan", en:"Extreme Greed — BUY signals suppressed"},
-    errMissingApiOrChatId: {uz:"API manzili yoki Chat ID yo'q", en:"Missing API address or Chat ID"},
-    debugNoSweep: {uz:"— Sweep yo'q (diapazon ichida)", en:"— No sweep (inside range)"},
-    connLoadingText: {uz:"ulanmoqda...", en:"connecting..."},
-    connOkSuffix: {uz:"coin kuzatilmoqda", en:"coins watched"},
-    connUpdating: {uz:"yangilanmoqda...", en:"updating..."},
-    connError: {uz:"ulanish xatosi", en:"connection error"},
-    lastUpdatedPrefix: {uz:"yangilandi:", en:"updated:"},
-    lastUpdatedNever: {uz:"— hali yangilanmagan", en:"— not updated yet"},
-    refreshBtn: {uz:"↻ Yangilash", en:"↻ Refresh"},
-    refresh1min: {uz:"1 daqiqa", en:"1 minute"},
-    refresh5min: {uz:"5 daqiqa", en:"5 minutes"},
-    refresh15min: {uz:"15 daqiqa", en:"15 minutes"},
-    historyBtn: {uz:"🕓 Tarix", en:"🕓 History"},
-    statsBtn: {uz:"📊 Statistika", en:"📊 Statistics"},
-    debugBtn: {uz:"🔍 Debug", en:"🔍 Debug"},
-    settingsBtn: {uz:"⚙ Sozlamalar", en:"⚙ Settings"},
-    alertNeedChatId: {uz:"Avval Telegram Chat ID kiriting.", en:"Enter a Telegram Chat ID first."},
-    tgConnectedMsg: {uz:"✅ Liquidity Tape ulandi — bu sinov xabari.", en:"✅ Liquidity Tape connected — this is a test message."},
-    tgSentSuccess: {uz:"Yuborildi! Telegram'ni tekshiring.", en:"Sent! Check Telegram."},
-    tgSentErrorPrefix: {uz:"Xato:", en:"Error:"},
-    confirmClearHistory: {uz:"Butun signal tarixini o'chirishni tasdiqlaysizmi? (Faol kuzatilayotgan savdolar ham o'chadi)", en:"Delete the entire signal history? (Actively tracked trades will be cleared too.)"},
-    copiedLabel: {uz:"✓ nusxalandi", en:"✓ copied"},
-    tvTitle: {uz:"TradingView'da ochish", en:"Open on TradingView"},
-    unmatchedCustomPrefix: {uz:"Topilmadi (Binance Futures'da bunday coin yo'q):", en:"Not found (no such coin on Binance Futures):"},
-    entryCardLabel: {uz:"Entry", en:"Entry"},
-    slCardLabel: {uz:"Stop Loss", en:"Stop Loss"},
-    tpCardLabel: {uz:"Take Profit", en:"Take Profit"},
-    riskCardLabel: {uz:"Risk", en:"Risk"},
-    tcFundingMatch: {uz:"✓ funding mos keladi", en:"✓ funding matches"},
-    tcCrt: {uz:"✓ CRT (H4→M15)", en:"✓ CRT (H4→M15)"},
-    tcContCisd: {uz:"✓ H4 CISD + M15 Continuation CISD", en:"✓ H4 CISD + M15 Continuation CISD"},
-    tcContOb: {uz:"✓ H4 CISD + M15 +OB retest", en:"✓ H4 CISD + M15 +OB retest"},
-    tcCisd: {uz:"✓ CISD", en:"✓ CISD"},
-    tcIfvg: {uz:"✓ iFVG retest", en:"✓ iFVG retest"},
-    tcAdxAligned: {uz:"trend bilan mos", en:"trend-aligned"},
-    rrNote: {uz:"Qarama-qarshi likvidlik maqsadi:", en:"Opposing liquidity target:"},
-    typeLabelLong: {uz:"BUY / PUMP", en:"BUY / PUMP"},
-    typeLabelShort: {uz:"SELL / DUMP", en:"SELL / DUMP"},
-    typeLabelDiverg: {uz:"OI DIVERGENSIYA", en:"OI DIVERGENCE"},
-    resultActive: {uz:"⏳ Faol", en:"⏳ Active"},
-    followTpSuffix: {uz:"davom etdi", en:"kept running"},
-    followSlSuffix: {uz:"oshib ketdi", en:"overshot"},
-    oiNoteShortCovering: {uz:"Short covering — kuchsiz rally", en:"Short covering — weak rally"},
-    oiNoteLongLiq: {uz:"Long likvidatsiya — dump sekinlashmoqda", en:"Long liquidation — dump slowing"},
-    oiNoteNewLongs: {uz:"Yangi longlar — kuchli trend", en:"New longs — strong trend"},
-    oiNoteNewShorts: {uz:"Yangi shortlar — kuchli tushish", en:"New shorts — strong decline"},
-    oiDivergPrefix: {uz:"OI divergensiya —", en:"OI divergence —"},
-    fundingDumpRisk: {uz:"dump xavfi", en:"dump risk"},
-    fundingPumpRisk: {uz:"pump xavfi", en:"pump risk"},
-    sideBuy: {uz:"BUY", en:"BUY"},
-    sideSell: {uz:"SELL", en:"SELL"},
-    signalWord: {uz:"signal", en:"signal"},
-    entryWord: {uz:"Entry", en:"Entry"},
-    slWord: {uz:"SL", en:"SL"},
-    tpWord: {uz:"TP", en:"TP"},
-    tagCisdConfirmed: {uz:"CISD tasdiqlangan", en:"CISD confirmed"},
-    tagIfvgConfirmed: {uz:"iFVG retest tasdiqlangan", en:"iFVG retest confirmed"},
-    tagCrt: {uz:"CRT (H4→M15)", en:"CRT (H4→M15)"},
-    tagContCisd: {uz:"H4 CISD + M15 Continuation CISD", en:"H4 CISD + M15 Continuation CISD"},
-    tagContOb: {uz:"H4 CISD + M15 +OB retest", en:"H4 CISD + M15 +OB retest"},
-    tagAdxAligned: {uz:"ADX trend bilan mos", en:"ADX trend-aligned"},
-    footerLine1: {uz:"Ma'lumot Binance Futures ochiq API'sidan olinadi, hech qanday hisob yoki API kalit talab qilinmaydi.", en:"Data comes from Binance Futures' open API — no account or API key required."},
-    footerFgiPrefix: {uz:"Fear & Greed Index —", en:"Fear & Greed Index —"},
-    footerFgiSuffix: {uz:"manbasidan.", en:"as the source."},
-    footerLine2: {uz:"Sahifa faqat brauzeringizda ishlaydi — server yo'q, ma'lumot hech qayerga yuborilmaydi.", en:"This page runs entirely in your browser — no server, no data ever sent anywhere."},
-    footerLine3: {uz:"Bu dashboard faqat signal ko'rsatadi, savdo tavsiyasi emas; risk-menejmentni o'zingiz belgilang.", en:"This dashboard only displays signals, not trading advice — set your own risk management."},
+    tapeWaiting: "Waiting for signals — they'll appear here after the first cycle finishes.",
+    sectionTradeSignals: "TRADE SIGNALS",
+    sectionTradeSignalsSub: "— Entry / Stop Loss / Take Profit, based on liquidity sweeps",
+    tradeEmpty: "No active signals yet — they'll show up here with Entry/SL/TP once a sweep is detected.",
+    ccpLabel: "Additional watched coins",
+    addCoinPlaceholder: "e.g. PEPE",
+    addCoinBtn: "+ Add",
+    chipEmpty: "None added yet — type a coin name above and click \"+ Add\".",
+    searchPlaceholder: "Search coins...",
+    legendFundingDump: "Funding: dump risk",
+    legendFundingPump: "Funding: pump risk",
+    legendBuySweep: "BUY signal (sweep)",
+    legendSellSweep: "SELL signal (sweep)",
+    thCoin: "Coin",
+    thPrice: "Price",
+    th24h: "24h %",
+    thFunding: "Funding",
+    thSignal: "Signal",
+    tableLoading: "Loading data...",
+    tableNoResults: "No results found.",
+    settingsTitle: "Settings",
+    apiBaseLabel: "API address (enter a proxy if you hit a CORS error)",
+    apiBaseHint: "If your browser can't connect to Binance directly (CORS), enter the Cloudflare Worker proxy address from the README here.",
+    topNLabel: "Top N coins",
+    fundingThresholdLabel: "Funding threshold (%)",
+    sweepLookbackLabel: "Sweep lookback (candles)",
+    sweepIntervalLabel: "Sweep interval",
+    riskRewardLabel: "Risk:Reward (TP ratio)",
+    slBufferLabel: "SL buffer (%, beyond the wick)",
+    atrMultLabel: "ATR multiplier (SL, adapts to volatility)",
+    cooldownLabel: "Cooldown (minutes, after TP/SL)",
+    postCloseLabel: "Track after close (hours)",
+    fgiFilterLabel: "Fear & Greed Index filter: block signals against extreme sentiment",
+    fgiFilterHint: "When on: SELL signals during Extreme Fear and BUY signals during Extreme Greed are suppressed entirely (since they'd be piling onto an already-extreme reading). Source: alternative.me Fear & Greed Index, updates once an hour.",
+    fgiFearLabel: "Extreme Fear threshold (≤)",
+    fgiGreedLabel: "Extreme Greed threshold (≥)",
+    entryModeLabel: "Entry confirmation mode",
+    entryModeOffOpt: "None — sweep + close-back (instant, most signals)",
+    entryModeCisdOpt: "CISD — structure break (first clean LTF signal)",
+    entryModeIfvgOpt: "iFVG retest — FVG invalidation + retest (most precise, fewer signals)",
+    entryModeHint: "\"None\": signal fires the moment a sweep happens. \"CISD\": after a candle sweeps and rejects the previous candle's high/low, price must close back through the most extreme body-open among the opposite-colored candles leading into that sweep (usually enough on its own). \"iFVG retest\": an FVG forms during the sweep leg, gets invalidated, and only fires once price retests that zone — the strictest filter, noticeably fewer signals.",
+    cisdScanWindowLabel: "Entry search window (candles)",
+    h4ConfirmLabel: "CRT mode: base the range on the H4 (previous candle)",
+    h4ConfirmHint: "When on: if the current (still-forming) H4 period sweeps beyond the previous, already-closed H4 candle's low/high, bias is set (e.g. low swept → BUY bias). Once bias is set, M15 is searched for a CISD (structure break) — this is the first (primary) entry. If another CISD forms later while the same bias still holds, it's fired as a separate \"Continuation CISD\" signal. The +OB retest (Order Block retest) only becomes active once at least one CISD-based trade has already occurred for this symbol+direction — it's not an independent first entry, only a later continuation opportunity. When off, the \"Entry confirmation mode\" setting is used instead, searching only M15's own rolling lookback range.",
+    tgEnabledLabel: "Send signals to Telegram",
+    tgHint: "Don't put the bot token here — it's only stored in the Cloudflare Worker (Settings → Variables and Secrets → TELEGRAM_BOT_TOKEN). For this to work, the \"API address\" field needs to point to your own Worker address (proxy-worker.js).",
+    tgChatIdLabel: "Telegram Chat ID",
+    tgChatIdPlaceholder: "e.g. 123456789",
+    tgTestBtn: "Send test message",
+    tgTestSending: "Sending...",
+    cancelBtn: "Cancel",
+    saveBtn: "Save & refresh",
+    historyTitle: "Signal history",
+    historyClear: "Clear",
+    closeBtn: "Close",
+    historyEmpty: "History is empty — entries appear here as signals occur.",
+    historyEntriesSuffix: "entries",
+    historyActiveSuffix: "trades active",
+    thTime: "Time",
+    thType: "Type",
+    thDetail: "Detail",
+    thResult: "Result",
+    thNextMove: "Follow-through",
+    statsTitle: "Statistics",
+    thCategory: "Category",
+    thTotal: "Total",
+    thWinPct: "Win %",
+    thAvgOvershoot: "Avg overshoot (TP)",
+    statsEmpty: "No closed trades yet — they'll show up here once a TP or SL hits.",
+    statTotalClosed: "Total closed",
+    statExpectancy: "Expectancy (R)",
+    categoryMajor: "Major crypto",
+    categoryCommodity: "Commodity (metal/energy)",
+    categoryLeveraged: "Leveraged ETF",
+    categoryBstock: "bStock (equity)",
+    categoryAlt: "Small-cap/Alt crypto",
+    debugTitle: "Debug — why no signal?",
+    debugHint: "Shows what pipeline stage each watched coin is at this cycle — check the logic in real time without waiting for a full signal to fire.",
+    debugEmpty: "No data yet — wait for the first cycle to finish.",
+    thStatus: "Status",
+    debugNoData: "No data (still loading, or not enough candles)",
+    debugSignalFired: "✅ Signal fired",
+    debugFgiBlocked: "🚫 Blocked by FGI",
+    debugWouldBe: "would've been",
+    debugEntryOtherFilter: "⏳ Entry confirmed, but another filter blocked it",
+    debugSweepWaiting: "pending",
+    debugSweepFound: "Sweep found",
+    debugConfirmDefault: "confirmation",
+    debugH4NoBias: "No H4 sweep yet — waiting for bias",
+    debugH4BiasWaiting: "H4 bias set, waiting for M15 CISD or +OB",
+    debugCisdLabel: "CISD",
+    debugIfvgLabel: "iFVG retest",
+    fgiTooltipFear: "Extreme Fear — SELL signals suppressed",
+    fgiTooltipGreed: "Extreme Greed — BUY signals suppressed",
+    errMissingApiOrChatId: "Missing API address or Chat ID",
+    debugNoSweep: "— No sweep (inside range)",
+    connLoadingText: "connecting...",
+    connOkSuffix: "coins watched",
+    connUpdating: "updating...",
+    connError: "connection error",
+    lastUpdatedPrefix: "updated:",
+    lastUpdatedNever: "— not updated yet",
+    refreshBtn: "↻ Refresh",
+    refresh1min: "1 minute",
+    refresh5min: "5 minutes",
+    refresh15min: "15 minutes",
+    historyBtn: "🕓 History",
+    statsBtn: "📊 Statistics",
+    debugBtn: "🔍 Debug",
+    settingsBtn: "⚙ Settings",
+    alertNeedChatId: "Enter a Telegram Chat ID first.",
+    tgConnectedMsg: "✅ Liquidity Tape connected — this is a test message.",
+    tgSentSuccess: "Sent! Check Telegram.",
+    tgSentErrorPrefix: "Error:",
+    confirmClearHistory: "Delete the entire signal history? (Actively tracked trades will be cleared too.)",
+    copiedLabel: "✓ copied",
+    tvTitle: "Open on TradingView",
+    unmatchedCustomPrefix: "Not found (no such coin on Binance Futures):",
+    entryCardLabel: "Entry",
+    slCardLabel: "Stop Loss",
+    tpCardLabel: "Take Profit",
+    riskCardLabel: "Risk",
+    tcFundingMatch: "✓ funding matches",
+    tcCrt: "✓ CRT (H4→M15)",
+    tcContCisd: "✓ H4 sweep + M15 Continuation CISD",
+    tcInitCisd: "✓ H4 sweep + M15 CISD",
+    tcContOb: "✓ H4 sweep + M15 +OB retest",
+    tcCisd: "✓ CISD",
+    tcIfvg: "✓ iFVG retest",
+    rrNote: "Opposing liquidity target:",
+    typeLabelLong: "BUY / PUMP",
+    typeLabelShort: "SELL / DUMP",
+    resultActive: "⏳ Active",
+    followTpSuffix: "kept running",
+    followSlSuffix: "overshot",
+    fundingDumpRisk: "dump risk",
+    fundingPumpRisk: "pump risk",
+    sideBuy: "BUY",
+    sideSell: "SELL",
+    signalWord: "signal",
+    entryWord: "Entry",
+    slWord: "SL",
+    tpWord: "TP",
+    tagCisdConfirmed: "CISD confirmed",
+    tagIfvgConfirmed: "iFVG retest confirmed",
+    tagCrt: "CRT (H4→M15)",
+    tagContCisd: "H4 sweep + M15 Continuation CISD",
+    tagInitCisd: "H4 sweep + M15 CISD",
+    tagContOb: "H4 sweep + M15 +OB retest",
+    footerLine1: "Data comes from Binance Futures' open API — no account or API key required.",
+    footerFgiPrefix: "Fear & Greed Index —",
+    footerFgiSuffix: "as the source.",
+    footerLine2: "This page runs entirely in your browser — no server, no data ever sent anywhere.",
+    footerLine3: "This dashboard only displays signals, not trading advice — set your own risk management.",
   };
   function t(key){
-    const entry = I18N[key];
-    if(!entry) return key;
-    return entry[lang] || entry.uz || key;
+    return I18N[key] || key;
   }
-  // Builds the localized display message for a signal from its RAW data (not a
-  // pre-rendered string) — so switching language re-renders history correctly
-  // instead of leaving old entries stuck in whatever language they were logged in.
+  // Builds the display message for a signal from its RAW data (not a
+  // pre-rendered string), so all history entries render consistently.
   function msgFor(item){
     if(item.kind === 'funding'){
       const v = item.fundingValue;
       return (v > 0 ? "Funding +" : "Funding ") + v.toFixed(4) + "% — " + (v > 0 ? t('fundingDumpRisk') : t('fundingPumpRisk'));
-    }
-    if(item.kind === 'diverg'){
-      return t('oiDivergPrefix') + " " + t(item.divergNoteKey);
     }
     if(item.kind === 'trade'){
       // Tape/live items keep a nested `trade` sub-object; persisted history
@@ -1039,14 +975,14 @@
       const tr = item.trade || item;
       const sideLabel = tr.side === 'buy' ? t('sideBuy') : t('sideSell');
       let modeTag;
-      if(tr.crt && tr.continuationType === 'cisd') modeTag = ' · ' + t('tagContCisd');
+      if(tr.crt && tr.continuationType === 'cisd-continuation') modeTag = ' · ' + t('tagContCisd');
+      else if(tr.crt && tr.continuationType === 'cisd') modeTag = ' · ' + t('tagInitCisd');
       else if(tr.crt && tr.continuationType === 'ob') modeTag = ' · ' + t('tagContOb');
       else if(tr.entryMode === 'ifvg') modeTag = ' · ' + t('tagIfvgConfirmed');
       else if(tr.entryMode === 'cisd') modeTag = ' · ' + t('tagCisdConfirmed');
       else modeTag = '';
-      const adxTag = tr.adxAligned && tr.adxValue !== null ? ' · ' + t('tagAdxAligned') + ' (' + tr.adxValue.toFixed(0) + ')' : '';
       return sideLabel + ' ' + t('signalWord') + ' — ' + t('entryWord') + ' ' + formatPrice(tr.entry) +
-             ', ' + t('slWord') + ' ' + formatPrice(tr.sl) + ', ' + t('tpWord') + ' ' + formatPrice(tr.tp) + modeTag + adxTag;
+             ', ' + t('slWord') + ' ' + formatPrice(tr.sl) + ', ' + t('tpWord') + ' ' + formatPrice(tr.tp) + modeTag;
     }
     if(item.msg) return item.msg; // legacy entries saved before raw-field storage — show as originally logged
     return '';
@@ -1059,25 +995,19 @@
     fundingThreshold: 0.05,   // percent
     sweepLookback: 20,
     sweepInterval: "15m",
-    oiPriceThreshold: 2,      // percent
-    oiThreshold: 3,           // percent
     riskReward: 2,            // TP = risk * riskReward
     slBufferPct: 0.15,        // % beyond the sweep wick (floor — real buffer is max(this, ATR-based))
     atrMult: 0.5,             // SL buffer = max(slBufferPct, ATR * atrMult)
     cooldownMinutes: 30,      // min minutes before re-signaling same symbol+side after a TP/SL close
     postCloseTrackHours: 3,   // how long to keep watching price after TP/SL to measure continuation ("overshoot")
-    fgiFilterEnabled: false,       // off by default — overlaps/conflicts with the ADX filter in strong trends (see notes)
     fgiExtremeFearThreshold: 25,   // F&G <= this -> Extreme Fear -> SELL signals suppressed
     fgiExtremeGreedThreshold: 75,  // F&G >= this -> Extreme Greed -> BUY signals suppressed
-    adxFilterEnabled: true,   // veto CRT reversal signals that fight an already-strong trend
-    adxThreshold: 20,         // ADX(14) >= this counts as "strong trend" (matches Xpert Algo's default)
     h4ConfirmEnabled: true,   // strict CRT mode: HTF range = single last-closed H4 candle (not a lookback window)
     entryConfirmMode: 'cisd',    // 'off' | 'cisd' | 'ifvg' — how entries are confirmed after a sweep
     cisdScanWindow: 8,        // recent candles searched for a sweep -> CISD confirmation pair
     tgEnabled: false,
     tgChatId: "",
     refreshMs: 300000,
-    language: 'uz',   // 'uz' | 'en'
   };
 
   const SETTINGS_KEY = "liquidity_tape_settings_v1";
@@ -1085,13 +1015,15 @@
   const OPEN_TRADES_KEY = "liquidity_tape_open_trades_v1";
   const COOLDOWN_KEY = "liquidity_tape_cooldowns_v1";
   const POSTCLOSE_KEY = "liquidity_tape_postclose_v1";
+  const H4_BIAS_KEY = "liquidity_tape_h4_bias_v1";
   const HISTORY_MAX = 300;
   let settings = loadSettings();
-  let lang = settings.language === 'en' ? 'en' : 'uz';
   let signalHistory = loadHistory();
   let openTrades = loadOpenTrades(); // trades whose TP/SL hasn't hit yet: {id, symbol, side, entry, sl, tp, ts}
   let lastClosedAt = loadCooldowns(); // "SYMBOL_side" -> ms timestamp of last TP/SL close
   let postCloseWatch = loadPostClose(); // trades being watched AFTER TP/SL for how far price kept running: {id, symbol, side, outcome, refLevel, targetDist, deadline}
+  let h4BiasState = loadH4BiasState(); // SYMBOL -> {side, extreme, setAt} — persistent H4 bias, held until price invalidates it (not recomputed from scratch every cycle)
+  let h4BiasChanged = false; // set true during a cycle whenever h4BiasState is mutated, so we know to persist it
   let refreshTimer = null;
   let sortState = { key: "symbol", dir: "asc" };
   let rows = {};          // symbol -> row data
@@ -1164,6 +1096,16 @@
   function savePostClose(){
     try{ localStorage.setItem(POSTCLOSE_KEY, JSON.stringify(postCloseWatch)); }catch(e){}
   }
+  function loadH4BiasState(){
+    try{
+      const raw = localStorage.getItem(H4_BIAS_KEY);
+      if(raw) return JSON.parse(raw);
+    }catch(e){}
+    return {};
+  }
+  function saveH4BiasState(){
+    try{ localStorage.setItem(H4_BIAS_KEY, JSON.stringify(h4BiasState)); }catch(e){}
+  }
 
   // ---------- DOM refs ----------
   const connDot = document.getElementById('connDot');
@@ -1203,8 +1145,6 @@
     document.getElementById('fundingThreshold').value = settings.fundingThreshold;
     document.getElementById('sweepLookback').value = settings.sweepLookback;
     document.getElementById('sweepInterval').value = settings.sweepInterval;
-    document.getElementById('oiPriceThreshold').value = settings.oiPriceThreshold;
-    document.getElementById('oiThreshold').value = settings.oiThreshold;
     document.getElementById('riskReward').value = settings.riskReward;
     document.getElementById('slBuffer').value = settings.slBufferPct;
     document.getElementById('atrMult').value = settings.atrMult;
@@ -1213,8 +1153,6 @@
     document.getElementById('fgiFilterEnabled').checked = !!settings.fgiFilterEnabled;
     document.getElementById('fgiExtremeFearThreshold').value = settings.fgiExtremeFearThreshold;
     document.getElementById('fgiExtremeGreedThreshold').value = settings.fgiExtremeGreedThreshold;
-    document.getElementById('adxFilterEnabled').checked = !!settings.adxFilterEnabled;
-    document.getElementById('adxThreshold').value = settings.adxThreshold;
     document.getElementById('entryConfirmMode').value = settings.entryConfirmMode;
     document.getElementById('cisdScanWindow').value = settings.cisdScanWindow;
     document.getElementById('h4ConfirmEnabled').checked = !!settings.h4ConfirmEnabled;
@@ -1232,8 +1170,6 @@
     settings.fundingThreshold = parseFloat(document.getElementById('fundingThreshold').value) || DEFAULTS.fundingThreshold;
     settings.sweepLookback = clamp(parseInt(document.getElementById('sweepLookback').value,10) || DEFAULTS.sweepLookback, 5, 50);
     settings.sweepInterval = document.getElementById('sweepInterval').value.trim() || DEFAULTS.sweepInterval;
-    settings.oiPriceThreshold = parseFloat(document.getElementById('oiPriceThreshold').value) || DEFAULTS.oiPriceThreshold;
-    settings.oiThreshold = parseFloat(document.getElementById('oiThreshold').value) || DEFAULTS.oiThreshold;
     settings.riskReward = Math.max(1, parseFloat(document.getElementById('riskReward').value) || DEFAULTS.riskReward);
     const slBufferRaw = parseFloat(document.getElementById('slBuffer').value);
     settings.slBufferPct = Math.max(0, isNaN(slBufferRaw) ? DEFAULTS.slBufferPct : slBufferRaw);
@@ -1248,9 +1184,6 @@
     settings.fgiExtremeFearThreshold = clamp(isNaN(fearRaw) ? DEFAULTS.fgiExtremeFearThreshold : fearRaw, 0, 50);
     const greedRaw = parseInt(document.getElementById('fgiExtremeGreedThreshold').value, 10);
     settings.fgiExtremeGreedThreshold = clamp(isNaN(greedRaw) ? DEFAULTS.fgiExtremeGreedThreshold : greedRaw, 50, 100);
-    settings.adxFilterEnabled = document.getElementById('adxFilterEnabled').checked;
-    const adxThRaw = parseInt(document.getElementById('adxThreshold').value, 10);
-    settings.adxThreshold = clamp(isNaN(adxThRaw) ? DEFAULTS.adxThreshold : adxThRaw, 10, 50);
     settings.entryConfirmMode = document.getElementById('entryConfirmMode').value;
     settings.cisdScanWindow = clamp(parseInt(document.getElementById('cisdScanWindow').value,10) || DEFAULTS.cisdScanWindow, 3, 20);
     settings.h4ConfirmEnabled = document.getElementById('h4ConfirmEnabled').checked;
@@ -1393,122 +1326,97 @@
     return false;
   }
 
-  // Wilder's ADX/DMI — trend strength (ADX) and direction (+DI vs -DI), computed
-  // from OHLC candles on the signal timeframe. Used to veto CRT reversal signals
-  // that would fight an already-strong trend (the exact "8 SL in a row on a
-  // trend day" failure mode diagnosed earlier).
-  function calculateADX(candles, period){
-    if(!candles || candles.length < period * 2 + 1) return null;
-    const highs = candles.map(c => parseFloat(c[2]));
-    const lows = candles.map(c => parseFloat(c[3]));
-    const closes = candles.map(c => parseFloat(c[4]));
-
-    const plusDM = [], minusDM = [], tr = [];
-    for(let i = 1; i < candles.length; i++){
-      const upMove = highs[i] - highs[i - 1];
-      const downMove = lows[i - 1] - lows[i];
-      plusDM.push((upMove > downMove && upMove > 0) ? upMove : 0);
-      minusDM.push((downMove > upMove && downMove > 0) ? downMove : 0);
-      tr.push(Math.max(highs[i] - lows[i], Math.abs(highs[i] - closes[i - 1]), Math.abs(lows[i] - closes[i - 1])));
-    }
-
-    function wilderSmooth(arr, p){
-      const out = [];
-      let sum = 0;
-      for(let i = 0; i < p; i++) sum += arr[i];
-      out.push(sum);
-      for(let i = p; i < arr.length; i++) out.push(out[out.length - 1] - (out[out.length - 1] / p) + arr[i]);
-      return out;
-    }
-    const sTR = wilderSmooth(tr, period);
-    const sPlusDM = wilderSmooth(plusDM, period);
-    const sMinusDM = wilderSmooth(minusDM, period);
-
-    const plusDI = [], minusDI = [], dx = [];
-    for(let i = 0; i < sTR.length; i++){
-      const pdi = sTR[i] !== 0 ? 100 * sPlusDM[i] / sTR[i] : 0;
-      const mdi = sTR[i] !== 0 ? 100 * sMinusDM[i] / sTR[i] : 0;
-      plusDI.push(pdi); minusDI.push(mdi);
-      dx.push((pdi + mdi) !== 0 ? 100 * Math.abs(pdi - mdi) / (pdi + mdi) : 0);
-    }
-    if(dx.length < period) return null;
-
-    let adx = 0;
-    for(let i = 0; i < period; i++) adx += dx[i];
-    adx /= period;
-    for(let i = period; i < dx.length; i++) adx = (adx * (period - 1) + dx[i]) / period;
-
-    const lastIdx = plusDI.length - 1;
-    const pdiLast = plusDI[lastIdx], mdiLast = minusDI[lastIdx];
-    return { value: adx, plusDI: pdiLast, minusDI: mdiLast, trendSide: pdiLast > mdiLast ? 'buy' : 'sell' };
-  }
-  function adxBlocksSide(side, adx){
-    if(!settings.adxFilterEnabled || !adx) return false;
-    return adx.value >= settings.adxThreshold && adx.trendSide !== side;
-  }
-
-  // Generic sweep+CISD detector: the earliest `refCount` candles in `klines`
-  // become the reference range, then the most recent `scanCount` candles are
-  // searched for a sweep of that range followed by a CISD close (price closing
-  // back through the opening price of the leg that led into the sweep). Fires
-  // only when the CISD confirmation lands on the very last candle in the scan
-  // window (freshness). Used both for H4 bias detection and for M15 entries
-  // (plain CISD mode, and the CRT model's M15 continuation-CISD stage).
-  function detectSweepCISD(klines, refCount, scanCount){
+  // Ported from the "Fractal Model [Pro+]" reference script:
+  //  - Sweep: candle[i] wicks beyond candle[i-1]'s high/low and CLOSES back
+  //    through it (a single-candle liquidity grab + rejection — GetHTFBias's
+  //    swept_high/swept_low logic), not a multi-candle reference-range pierce.
+  //  - CISD level: seeded from the sweep candle's own body extreme, then
+  //    walked backward through consecutive OPPOSITE-colored candles (bounded
+  //    to 20 bars, no "abort if a deeper wick exists further back" rule),
+  //    tracking the most extreme body-top/bottom among them — ported from
+  //    detectCISDAndProjections's series_high/series_low accumulation.
+  // `requireFresh` (default true): when true, only fires if the CISD close lands
+  // on the very last candle in the scan window — used for actual entry triggers
+  // (M15 continuation-CISD, plain CISD mode), where the signal must be "happening
+  // right now". When false, any confirmation found anywhere within the scan
+  // window counts, and the MOST RECENT one wins — used for H4 bias, so bias stays
+  // active for the whole scan window instead of resetting every single H4 candle.
+  function detectSweepCISD(klines, refCount, scanCount, requireFresh){
+    requireFresh = requireFresh !== false;
     const neededLen = refCount + scanCount + 1;
     if(!klines || klines.length < neededLen) return null;
-    const refRange = klines.slice(0, klines.length - scanCount);
-    const scan = klines.slice(klines.length - scanCount);
-    const priorHigh = Math.max(...refRange.map(c => parseFloat(c[2])));
-    const priorLow = Math.min(...refRange.map(c => parseFloat(c[3])));
-    const isBullish = c => parseFloat(c[4]) > parseFloat(c[1]);
-    const isBearish = c => parseFloat(c[4]) < parseFloat(c[1]);
+    // One extra candle so scan[0] still has a "previous candle" to compare against.
+    const scan = klines.slice(Math.max(0, klines.length - scanCount - 1));
     const lastIdx = scan.length - 1;
+    const o = c => parseFloat(c[1]), h = c => parseFloat(c[2]), l = c => parseFloat(c[3]), cl = c => parseFloat(c[4]);
 
-    function lastSweepIdx(getWick, level, above){
-      let found = -1;
-      for(let i = 0; i < scan.length; i++){
-        const w = getWick(scan[i]);
-        if(above ? w > level : w < level) found = i;
+    function cisdLevel(sweepIdx, isBull){
+      // isBull=true -> rejecting a swept LOW, so the level is the highest body
+      // extreme among consecutive BEARISH candles into the sweep (must close
+      // back ABOVE it). isBull=false -> mirrored for a swept HIGH.
+      const seed = scan[sweepIdx];
+      let lvl = isBull ? Math.max(o(seed), cl(seed)) : Math.min(o(seed), cl(seed));
+      for(let back = 1; back <= 20; back++){
+        const idx = sweepIdx - back;
+        if(idx < 0) break;
+        const bar = scan[idx];
+        const opposite = isBull ? (cl(bar) <= o(bar)) : (cl(bar) > o(bar));
+        if(!opposite) break; // hit a same-direction candle -> the leg ends here
+        const bodyExtreme = isBull ? Math.max(o(bar), cl(bar)) : Math.min(o(bar), cl(bar));
+        lvl = isBull ? Math.max(lvl, bodyExtreme) : Math.min(lvl, bodyExtreme);
       }
-      return found;
-    }
-    function cisdConfirmIdx(sweepIdx, matchFn, dir){
-      let j = sweepIdx, cisdLevel = null;
-      if(matchFn(scan[j])){ cisdLevel = parseFloat(scan[j][1]); } else { j = sweepIdx - 1; }
-      while(j >= 0 && matchFn(scan[j])){ cisdLevel = parseFloat(scan[j][1]); j--; }
-      if(cisdLevel === null) return null;
-      for(let k = sweepIdx; k < scan.length; k++){
-        const close = parseFloat(scan[k][4]);
-        if(dir === 'sell' && close < cisdLevel) return k;
-        if(dir === 'buy' && close > cisdLevel) return k;
-      }
-      return null;
+      return lvl;
     }
 
-    let side = null, sweepAnchor = null, confirmIdx = null;
     let sawSweepHigh = false, sawSweepLow = false;
+    let sellConfirmIdx = null, sellAnchor = null, sellPriorHigh = null, sellPriorLow = null;
+    let buyConfirmIdx = null, buyAnchor = null, buyPriorHigh = null, buyPriorLow = null;
 
-    const sweepHighIdx = lastSweepIdx(c => parseFloat(c[2]), priorHigh, true);
-    if(sweepHighIdx >= 0){
+    let sellSweepIdx = -1, buySweepIdx = -1;
+    for(let i = 1; i <= lastIdx; i++){
+      const cur = scan[i], prev = scan[i - 1];
+      if(h(cur) > h(prev) && cl(cur) < h(prev)) sellSweepIdx = i; // swept high, closed back below -> bearish reject
+      if(l(cur) < l(prev) && cl(cur) > l(prev)) buySweepIdx = i;  // swept low, closed back above -> bullish reject
+    }
+
+    if(sellSweepIdx >= 0){
       sawSweepHigh = true;
-      const cIdx = cisdConfirmIdx(sweepHighIdx, isBullish, 'sell');
-      if(cIdx === lastIdx){
-        side = 'sell';
-        sweepAnchor = Math.max(...scan.slice(sweepHighIdx, lastIdx + 1).map(c => parseFloat(c[2])));
-        confirmIdx = cIdx;
+      sellPriorHigh = h(scan[sellSweepIdx - 1]);
+      sellPriorLow = l(scan[sellSweepIdx - 1]);
+      const lvl = cisdLevel(sellSweepIdx, false);
+      for(let k = sellSweepIdx; k <= lastIdx; k++){
+        if(cl(scan[k]) < lvl){
+          sellConfirmIdx = k;
+          sellAnchor = Math.max(...scan.slice(sellSweepIdx, k + 1).map(h));
+          break;
+        }
       }
     }
-    if(side === null){
-      const sweepLowIdx = lastSweepIdx(c => parseFloat(c[3]), priorLow, false);
-      if(sweepLowIdx >= 0){
-        sawSweepLow = true;
-        const cIdx = cisdConfirmIdx(sweepLowIdx, isBearish, 'buy');
-        if(cIdx === lastIdx){
-          side = 'buy';
-          sweepAnchor = Math.min(...scan.slice(sweepLowIdx, lastIdx + 1).map(c => parseFloat(c[3])));
-          confirmIdx = cIdx;
+    if(buySweepIdx >= 0){
+      sawSweepLow = true;
+      buyPriorHigh = h(scan[buySweepIdx - 1]);
+      buyPriorLow = l(scan[buySweepIdx - 1]);
+      const lvl = cisdLevel(buySweepIdx, true);
+      for(let k = buySweepIdx; k <= lastIdx; k++){
+        if(cl(scan[k]) > lvl){
+          buyConfirmIdx = k;
+          buyAnchor = Math.min(...scan.slice(buySweepIdx, k + 1).map(l));
+          break;
         }
+      }
+    }
+
+    // Whichever confirmed more recently wins (relevant when both a sell and a
+    // buy CISD occurred within the same window — the newer one reflects the
+    // current state of delivery).
+    let side = null, sweepAnchor = null, confirmIdx = null, priorHigh = null, priorLow = null;
+    if(sellConfirmIdx !== null && (buyConfirmIdx === null || sellConfirmIdx >= buyConfirmIdx)){
+      if(!requireFresh || sellConfirmIdx === lastIdx){
+        side = 'sell'; sweepAnchor = sellAnchor; confirmIdx = sellConfirmIdx; priorHigh = sellPriorHigh; priorLow = sellPriorLow;
+      }
+    } else if(buyConfirmIdx !== null){
+      if(!requireFresh || buyConfirmIdx === lastIdx){
+        side = 'buy'; sweepAnchor = buyAnchor; confirmIdx = buyConfirmIdx; priorHigh = buyPriorHigh; priorLow = buyPriorLow;
       }
     }
     return { side, sweepAnchor, confirmIdx, sawSweepHigh, sawSweepLow, scan, priorHigh, priorLow };
@@ -1644,19 +1552,17 @@
     const crtMode = settings.h4ConfirmEnabled; // CRT model: H4 sweep+CISD (bias) -> M15 continuation-CISD or +OB retest (entry)
     const entryMode = settings.entryConfirmMode; // 'off' | 'cisd' | 'ifvg' — only used when CRT mode is OFF
     const scanWindow = crtMode ? settings.cisdScanWindow : (entryMode !== 'off' ? settings.cisdScanWindow : 1);
-    const refCandlesNeeded = settings.sweepLookback; // M15's own rolling range — needed in both modes now
+    const refCandlesNeeded = settings.sweepLookback; // minimum history padding before the previous-candle sweep check runs
     const neededLen = refCandlesNeeded + scanWindow + 1;
-    const h4NeededLen = settings.sweepLookback + settings.cisdScanWindow + 1; // H4 needs its own ref+scan window for CISD detection
+    const H4_BIAS_REF_CANDLES = 12;  // minimum H4 history padding required before the sweep+CISD scan runs
+    const H4_BIAS_SCAN_CANDLES = 10; // H4 candles searched for a previous-candle sweep + CISD confirmation
+    const h4NeededLen = H4_BIAS_REF_CANDLES + H4_BIAS_SCAN_CANDLES + 1; // ~ 4 days of H4 history
 
-    const [premium, klines, oiHist, h4Klines, adxKlines] = await Promise.all([
+    const [premium, klines, h4Klines] = await Promise.all([
       apiGet("/fapi/v1/premiumIndex", {symbol}).catch(() => null),
       apiGet("/fapi/v1/klines", {symbol, interval: settings.sweepInterval, limit: neededLen}).catch(() => null),
-      apiGet("/futures/data/openInterestHist", {symbol, period: "15m", limit: 5}).catch(() => null),
       crtMode
         ? apiGet("/fapi/v1/klines", {symbol, interval: "4h", limit: h4NeededLen}).catch(() => null)
-        : Promise.resolve(null),
-      settings.adxFilterEnabled
-        ? apiGet("/fapi/v1/klines", {symbol, interval: settings.sweepInterval, limit: 60}).catch(() => null)
         : Promise.resolve(null),
     ]);
 
@@ -1667,12 +1573,8 @@
       funding: null,
       sweep: null,      // 'high' | 'low' | null
       sweepRank: 0,
-      diverg: null,     // {dir, priceChange, oiChange} | null
-      divergRank: 0,
       trade: null,      // {side, entry, sl, tp, target, riskPct, confluence, rr} | null
       h4Bias: null,      // 'buy' | 'sell' | null — CRT model's H4-level sweep+CISD bias (Stage 1)
-      adx: null,         // {value, plusDI, minusDI, trendSide} — Wilder ADX/DMI on the signal timeframe
-      adxValue: null,    // flat number mirror of adx.value, for table sorting
       debug: null,       // {sweepHigh, sweepLow, entrySide, blockedBy, finalSide, h4Bias} — for the "Debug" diagnostics panel
     };
 
@@ -1681,17 +1583,44 @@
       if(out.price === null) out.price = parseFloat(premium.markPrice);
     }
 
-    if(settings.adxFilterEnabled && adxKlines && adxKlines.length >= 30){
-      out.adx = calculateADX(adxKlines, 14);
-      out.adxValue = out.adx ? out.adx.value : null;
-    }
-
-    // CRT Stage 1: H4-level bias via full sweep+CISD detection on H4 candles
-    // themselves (not just a raw candle's high/low) — a genuine higher-timeframe
-    // structural reversal, not merely "the previous candle's range".
+    // CRT Stage 1 (H4 bias) — persistent, invalidation-aware, matching the Pine
+    // Script's "Bias" behaviour: once a real CISD reversal is confirmed on H4,
+    // that direction is remembered and stays active across MANY H4 candles —
+    // it does NOT get recomputed from a fresh 2-candle comparison every cycle.
+    // It only clears once price closes back past the ORIGINAL swept extreme in
+    // the opposite direction (a genuine invalidation), exactly like the chart's
+    // C2 setup breaking.
     if(crtMode && h4Klines){
-      const h4Result = detectSweepCISD(h4Klines, settings.sweepLookback, settings.cisdScanWindow);
-      out.h4Bias = h4Result ? h4Result.side : null;
+      const existing = h4BiasState[symbol];
+      let bias = null;
+
+      if(existing && h4Klines.length >= 1){
+        const curH4 = h4Klines[h4Klines.length - 1];
+        const curH4Low = parseFloat(curH4[3]), curH4High = parseFloat(curH4[2]);
+        const invalidated = existing.side === 'buy' ? curH4Low < existing.extreme : curH4High > existing.extreme;
+        if(!invalidated){
+          bias = existing.side;
+        } else {
+          delete h4BiasState[symbol];
+          h4BiasChanged = true;
+        }
+      }
+
+      if(bias === null){
+        // No active bias (none set yet, or just invalidated) — scan recent H4
+        // history for a fresh CISD-confirmed reversal (sweep + close back
+        // through the leg's opening price). Not required to be on the very
+        // last candle — any confirmation within the window counts, since this
+        // sets a bias that should then persist going forward.
+        const h4Result = detectSweepCISD(h4Klines, H4_BIAS_REF_CANDLES, H4_BIAS_SCAN_CANDLES, false);
+        if(h4Result && h4Result.side){
+          bias = h4Result.side;
+          h4BiasState[symbol] = { side: bias, extreme: h4Result.sweepAnchor, setAt: Date.now() };
+          h4BiasChanged = true;
+        }
+      }
+
+      out.h4Bias = bias;
     }
 
     if(klines && klines.length >= neededLen){
@@ -1703,11 +1632,17 @@
       let continuationType = null; // 'cisd' | 'ob' | null — which M15 path fired (CRT mode only)
 
       if(crtMode){
-        // CRT Stage 2: once H4 bias is set, look on M15 for EITHER a
-        // continuation-CISD (a fresh sweep+CISD in the same direction as the H4
-        // bias) OR a retest of the Order Block from the move into that bias —
-        // whichever confirms first wins. Continuation-CISD is tried first.
+        // CRT Stage 2: once H4 bias is set, M15 CISD is the primary/initial
+        // entry trigger. The Order Block retest is a CONTINUATION-ONLY
+        // mechanism — matching the chart sequence (CISD confirms first, an OB
+        // only becomes a valid retest zone during the later continuation leg)
+        // — so it's only tried once a CISD-based trade has already fired for
+        // this exact symbol+direction; it never fires as an independent first
+        // entry.
         if(out.h4Bias){
+          const cooldownKeyForBias = symbol + '_' + out.h4Bias;
+          const hasPriorCisd = !!lastClosedAt[cooldownKeyForBias];
+
           const m15Cisd = detectSweepCISD(klines, refCandlesNeeded, scanWindow);
           if(m15Cisd){
             sawSweepHigh = m15Cisd.sawSweepHigh;
@@ -1719,10 +1654,13 @@
               sweepAnchor = m15Cisd.sweepAnchor;
               confirmIdx = m15Cisd.confirmIdx;
               scan = m15Cisd.scan;
-              continuationType = 'cisd';
+              // If a CISD trade for this exact symbol+direction already closed
+              // before, this fresh CISD is a follow-on move continuing the same
+              // H4 bias — tag it as "Continuation CISD" rather than the initial.
+              continuationType = hasPriorCisd ? 'cisd-continuation' : 'cisd';
             }
           }
-          if(side === null){
+          if(side === null && hasPriorCisd){
             const obWindow = klines.slice(-scanWindow);
             const ob = findOrderBlock(obWindow, out.h4Bias);
             if(ob && checkObRetest(obWindow, ob, out.h4Bias)){
@@ -1891,22 +1829,18 @@
 
       } // end of else (non-CRT M15-only pipeline)
 
-      const entrySideBeforeFilters = side; // snapshot before FGI/ADX gating, for the debug panel
+      const entrySideBeforeFilters = side; // snapshot before FGI gating, for the debug panel
       let blockedBy = null;
       if(side && fgiBlocksSide(side)){
         blockedBy = 'fgi';
         side = null; // sentiment would be piled onto an already-extreme reading — suppress
-      }
-      if(side && adxBlocksSide(side, out.adx)){
-        blockedBy = 'adx';
-        side = null; // strong trend running the other way — counter-trend reversal signal suppressed
       }
 
       out.debug = {
         sweepHigh: sawSweepHigh,
         sweepLow: sawSweepLow,
         entrySide: entrySideBeforeFilters, // 'buy'/'sell' if entry confirmation completed this cycle, else null
-        blockedBy,                          // null | 'fgi' | 'adx'
+        blockedBy,                          // null | 'fgi'
         finalSide: side,                    // non-null only if a signal actually fires
         h4Bias: out.h4Bias,                  // CRT mode only: H4-level bias, or null if no H4 CISD yet
       };
@@ -1943,31 +1877,8 @@
           if(side === 'sell' && out.funding > settings.fundingThreshold) confluence++;
         }
         if(crtMode && continuationType) confluence++; // structural: built on a real H4 CISD bias + M15 continuation
-        const adxAligned = settings.adxFilterEnabled && out.adx && out.adx.value >= settings.adxThreshold && out.adx.trendSide === side;
-        if(adxAligned) confluence++;
 
-        out.trade = { side, entry, sl, tp, target, riskPct, confluence, rr: settings.riskReward, cooldown: !!inCooldown, crt: crtMode && !!continuationType, continuationType, entryMode: crtMode ? null : entryMode, adx: out.adx, adxAligned };
-      }
-
-      // reuse klines for OI-divergence price reference (~60 min back at 15m => 4 candles)
-      const backIdx = Math.max(0, klines.length - 1 - 4);
-      out._oldPrice = parseFloat(klines[backIdx][4]);
-    }
-
-    if(oiHist && oiHist.length >= 2 && out._oldPrice && out.price){
-      const oldOi = parseFloat(oiHist[0].sumOpenInterest);
-      const newOi = parseFloat(oiHist[oiHist.length - 1].sumOpenInterest);
-      const priceChange = (out.price - out._oldPrice) / out._oldPrice * 100;
-      const oiChange = oldOi ? (newOi - oldOi) / oldOi * 100 : 0;
-
-      if(Math.abs(priceChange) >= settings.oiPriceThreshold && Math.abs(oiChange) >= settings.oiThreshold){
-        let dir, noteKey;
-        if(priceChange > 0 && oiChange < 0){ dir = 'down'; noteKey = 'oiNoteShortCovering'; }
-        else if(priceChange < 0 && oiChange < 0){ dir = 'down'; noteKey = 'oiNoteLongLiq'; }
-        else if(priceChange > 0 && oiChange > 0){ dir = 'up'; noteKey = 'oiNoteNewLongs'; }
-        else { dir = 'up'; noteKey = 'oiNoteNewShorts'; }
-        out.diverg = { dir, noteKey, priceChange, oiChange };
-        out.divergRank = 2;
+        out.trade = { side, entry, sl, tp, target, riskPct, confluence, rr: settings.riskReward, cooldown: !!inCooldown, crt: crtMode && !!continuationType, continuationType, entryMode: crtMode ? null : entryMode };
       }
     }
 
@@ -1978,6 +1889,7 @@
   async function runCycle(){
     setConn('loading', t('connUpdating'));
     hideBanner();
+    h4BiasChanged = false;
     try{
       await fetchFearGreedIndex();
       renderFgiBadge();
@@ -2022,16 +1934,9 @@
               symbol: r.symbol, key,
               type: t.side === 'buy' ? 'long' : 'short',
               kind: 'trade',
-              trade: { side: t.side, entry: t.entry, sl: t.sl, tp: t.tp, crt: t.crt, continuationType: t.continuationType, adxAligned: t.adxAligned, adxValue: t.adx ? t.adx.value : null, entryMode: t.entryMode }
+              trade: { side: t.side, entry: t.entry, sl: t.sl, tp: t.tp, crt: t.crt, continuationType: t.continuationType, entryMode: t.entryMode }
             });
           }
-        }
-        if(r.diverg){
-          const key = r.symbol + ':diverg:' + r.diverg.dir;
-          cycleSignals.push({
-            symbol: r.symbol, key, type: 'diverg',
-            kind: 'diverg', divergNoteKey: r.diverg.noteKey
-          });
         }
       });
 
@@ -2041,11 +1946,11 @@
       const newOnes = cycleSignals.filter(s => !seenSignalKeys.has(s.key));
       newOnes.forEach(s => {
         signalFeed.unshift(Object.assign({ts: now}, s));
-        const histEntry = { ts: now.toISOString(), symbol: s.symbol, type: s.type, kind: s.kind, fundingValue: s.fundingValue, divergNoteKey: s.divergNoteKey };
+        const histEntry = { ts: now.toISOString(), symbol: s.symbol, type: s.type, kind: s.kind, fundingValue: s.fundingValue };
         if(s.trade){
           tradeIdCounter++;
           const id = now.getTime() + '_' + tradeIdCounter;
-          Object.assign(histEntry, { id, side: s.trade.side, entry: s.trade.entry, sl: s.trade.sl, tp: s.trade.tp, crt: s.trade.crt, continuationType: s.trade.continuationType, entryMode: s.trade.entryMode, adxAligned: s.trade.adxAligned, adxValue: s.trade.adxValue, outcome: null, closePrice: null, closedTs: null });
+          Object.assign(histEntry, { id, side: s.trade.side, entry: s.trade.entry, sl: s.trade.sl, tp: s.trade.tp, crt: s.trade.crt, continuationType: s.trade.continuationType, entryMode: s.trade.entryMode, outcome: null, closePrice: null, closedTs: null });
           openTrades.push({ id, symbol: s.symbol, side: s.trade.side, entry: s.trade.entry, sl: s.trade.sl, tp: s.trade.tp, ts: now.toISOString() });
         }
         signalHistory.unshift(histEntry);
@@ -2075,8 +1980,9 @@
       renderTradeSignals(activeTrades);
       renderTable(Object.keys(newRows));
       if(debugModal.classList.contains('show')) renderDebug();
+      if(h4BiasChanged) saveH4BiasState();
       setConn('ok', symbols.length + " " + t('connOkSuffix'));
-      lastUpdated.textContent = t('lastUpdatedPrefix') + " " + now.toLocaleTimeString(lang === 'en' ? 'en-US' : 'uz-UZ');
+      lastUpdated.textContent = t('lastUpdatedPrefix') + " " + now.toLocaleTimeString('en-US');
 
     }catch(err){
       setConn('err', t('connError'));
@@ -2118,7 +2024,7 @@
     tapeContainer.innerHTML = '<div class="tape-track">' + itemsHtml + itemsHtml + '</div>';
   }
   function tapeItemHtml(s){
-    const time = s.ts.toLocaleTimeString(lang === 'en' ? 'en-US' : 'uz-UZ', {hour:'2-digit', minute:'2-digit'});
+    const time = s.ts.toLocaleTimeString('en-US', {hour:'2-digit', minute:'2-digit'});
     return '<a class="tape-item ' + s.type + '" href="' + tradingViewUrl(s.symbol) + '" target="_blank" rel="noopener">' +
       '<span class="t">' + time + '</span>' +
       '<span class="sym">' + s.symbol.replace('USDT','') + '</span>' +
@@ -2217,10 +2123,10 @@
     }
     body.innerHTML = signalHistory.map(h => {
       const d = new Date(h.ts);
-      const time = d.toLocaleString(lang === 'en' ? 'en-US' : 'uz-UZ', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'});
-      const cls = h.type === 'long' ? 'htype-long' : (h.type === 'short' ? 'htype-short' : (h.type === 'diverg' ? 'htype-diverg' : ''));
-      const label = h.type === 'long' ? t('typeLabelLong') : (h.type === 'short' ? t('typeLabelShort') : t('typeLabelDiverg'));
+      const time = d.toLocaleString('en-US', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'});
       const base = h.symbol.replace('USDT','');
+      const cls = h.type === 'long' ? 'htype-long' : 'htype-short';
+      const label = h.type === 'long' ? t('typeLabelLong') : t('typeLabelShort');
       let resultHtml;
       if(h.id === undefined){
         resultHtml = '<span class="res-na">—</span>';
@@ -2325,7 +2231,6 @@
     if(!d) return { text: t('debugNoData'), cls: 'res-na' };
     if(d.finalSide) return { text: t('debugSignalFired') + ' (' + (d.finalSide === 'buy' ? t('sideBuy') : t('sideSell')) + ')', cls: 'res-tp' };
     if(d.blockedBy === 'fgi') return { text: t('debugFgiBlocked') + ' (' + (d.entrySide === 'buy' ? t('sideBuy') : t('sideSell')) + ' ' + t('debugWouldBe') + ')', cls: 'res-sl' };
-    if(d.blockedBy === 'adx') return { text: t('debugAdxBlocked') + ' (' + (d.entrySide === 'buy' ? t('sideBuy') : t('sideSell')) + ' ' + t('debugWouldBe') + ', ' + t('debugAdxBlockedSuffix') + ')', cls: 'res-sl' };
     if(d.entrySide) return { text: t('debugEntryOtherFilter'), cls: 'res-open' };
     if(settings.h4ConfirmEnabled){
       if(!d.h4Bias) return { text: t('debugH4NoBias'), cls: 'res-na' };
@@ -2338,14 +2243,13 @@
     const bodyEl = document.getElementById('debugBody');
     const list = Object.values(rows).sort((a, b) => a.symbol.localeCompare(b.symbol));
     if(list.length === 0){
-      bodyEl.innerHTML = '<tr><td colspan="3" class="history-empty">' + t('debugEmpty') + '</td></tr>';
+      bodyEl.innerHTML = '<tr><td colspan="2" class="history-empty">' + t('debugEmpty') + '</td></tr>';
       return;
     }
     bodyEl.innerHTML = list.map(r => {
       const status = debugStatusText(r);
       const base = r.symbol.replace('USDT','');
-      const adxText = r.adx ? r.adx.value.toFixed(0) + ' ' + (r.adx.trendSide === 'buy' ? '▲' : '▼') : '—';
-      return '<tr><td>' + base + '</td><td class="' + status.cls + '">' + status.text + '</td><td>' + adxText + '</td></tr>';
+      return '<tr><td>' + base + '</td><td class="' + status.cls + '">' + status.text + '</td></tr>';
     }).join('');
   }
 
@@ -2365,12 +2269,12 @@
     const fundingMatch = (t2.side === 'buy' && r.funding !== null && r.funding < -settings.fundingThreshold) ||
                           (t2.side === 'sell' && r.funding !== null && r.funding > settings.fundingThreshold);
     const tags = [];
-    if(t2.crt && t2.continuationType === 'cisd') tags.push('<span class="tc-conf tc-h4">' + t('tcContCisd') + '</span>');
+    if(t2.crt && t2.continuationType === 'cisd-continuation') tags.push('<span class="tc-conf tc-h4">' + t('tcContCisd') + '</span>');
+    else if(t2.crt && t2.continuationType === 'cisd') tags.push('<span class="tc-conf tc-h4">' + t('tcInitCisd') + '</span>');
     else if(t2.crt && t2.continuationType === 'ob') tags.push('<span class="tc-conf tc-h4">' + t('tcContOb') + '</span>');
     else if(t2.entryMode === 'ifvg') tags.push('<span class="tc-conf tc-cisd">' + t('tcIfvg') + '</span>');
     else if(t2.entryMode === 'cisd') tags.push('<span class="tc-conf tc-cisd">' + t('tcCisd') + '</span>');
     if(fundingMatch) tags.push('<span class="tc-conf">' + t('tcFundingMatch') + '</span>');
-    if(t2.adxAligned && t2.adx) tags.push('<span class="tc-conf tc-adx">✓ ADX ' + t2.adx.value.toFixed(0) + ' (' + t('tcAdxAligned') + ')</span>');
     const tvUrl = tradingViewUrl(r.symbol);
     return '<a class="trade-card ' + t2.side + '" href="' + tvUrl + '" target="_blank" rel="noopener" title="' + t('tvTitle') + '">' +
       '<div class="tc-head">' +
@@ -2460,28 +2364,12 @@
     if(r.sweep === 'high') sweepCell = '<span class="badge sweep-high">' + sweepIcon + ' ' + t('sideSell') + '</span>';
     else if(r.sweep === 'low') sweepCell = '<span class="badge sweep-low">' + sweepIcon + ' ' + t('sideBuy') + '</span>';
 
-    let divergCell = '<span class="dim">—</span>';
-    if(r.diverg){
-      const cls = r.diverg.dir === 'up' ? 'diverg-up' : 'diverg-down';
-      divergCell = '<span class="badge ' + cls + '">' + t(r.diverg.noteKey) + '</span>';
-    }
-
-    let adxCell = '<span class="dim">—</span>';
-    if(r.adx){
-      const strong = r.adx.value >= settings.adxThreshold;
-      const arrow = r.adx.trendSide === 'buy' ? '▲' : '▼';
-      const cls = strong ? (r.adx.trendSide === 'buy' ? 'up' : 'down') : 'dim';
-      adxCell = '<span class="' + cls + '">' + r.adx.value.toFixed(0) + ' ' + arrow + '</span>';
-    }
-
     return '<tr>' +
       '<td class="sym-cell"><a class="sym-link" href="' + tradingViewUrl(r.symbol) + '" target="_blank" rel="noopener">' + base + ' <span class="quote">/USDT</span></a></td>' +
       '<td class="num">' + (r.price !== null ? formatPrice(r.price) : '—') + '</td>' +
       '<td class="num ' + changeClass + '">' + (r.change24h !== null ? (r.change24h > 0 ? '+' : '') + r.change24h.toFixed(2) + '%' : '—') + '</td>' +
       '<td class="num ' + fundingClass + '">' + (r.funding !== null ? (r.funding > 0 ? '+' : '') + r.funding.toFixed(4) + '%' : '—') + '</td>' +
-      '<td class="num">' + adxCell + '</td>' +
       '<td>' + sweepCell + '</td>' +
-      '<td>' + divergCell + '</td>' +
       '</tr>';
   }
 
@@ -2491,39 +2379,15 @@
     return p.toFixed(6);
   }
 
-  // ---------- i18n: static DOM + language switch ----------
+  // ---------- i18n: static DOM text fill ----------
   function applyStaticI18n(){
-    document.documentElement.lang = lang;
     document.querySelectorAll('[data-i18n]').forEach(el => {
       el.textContent = t(el.getAttribute('data-i18n'));
     });
     document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
       el.placeholder = t(el.getAttribute('data-i18n-placeholder'));
     });
-    document.querySelectorAll('#langToggle button').forEach(btn => {
-      btn.classList.toggle('active', btn.getAttribute('data-lang') === lang);
-    });
   }
-  function setLanguage(newLang){
-    if(newLang !== 'en' && newLang !== 'uz') return;
-    lang = newLang;
-    settings.language = lang;
-    saveSettingsToStorage();
-    applyStaticI18n();
-    // Re-render everything that shows translated dynamic text, using data
-    // already in memory — no need to re-fetch from Binance for a language switch.
-    renderFgiBadge();
-    renderTape();
-    renderTradeSignals(Object.values(rows).filter(r => r.trade));
-    renderTable();
-    if(historyModal.classList.contains('show')) renderHistory();
-    if(statsModal.classList.contains('show')) renderStats();
-    if(debugModal.classList.contains('show')) renderDebug();
-  }
-  document.getElementById('langToggle').addEventListener('click', (e) => {
-    const btn = e.target.closest('button[data-lang]');
-    if(btn) setLanguage(btn.getAttribute('data-lang'));
-  });
   applyStaticI18n();
 
   // ---------- Boot ----------
