@@ -16,7 +16,7 @@ If you find it useful and would like to support its development, you can make a 
 
 ### USDT (BEP20 / BNB Smart Chain)
 
-<img width="954" height="1191" alt="image" src="https://github.com/user-attachments/assets/f0e8421b-f094-4b51-a160-d606e6428892" />
+<img width="374" height="379" alt="image" src="https://github.com/user-attachments/assets/2f6d2aff-e39b-4458-bc00-dff13ee536be" />
 
 ```text
 0xc3c6aad3bcdb372552f9ff09068b4d06977e835f
